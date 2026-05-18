@@ -1,0 +1,35 @@
+insert into public.school_locations (
+  school_name,
+  school_name_normalized,
+  moe_school_code,
+  province,
+  city,
+  department,
+  education_level,
+  remark,
+  campus_city,
+  location_note,
+  location_source,
+  confidence
+) values
+  ('北京邮电大学(宏福校区)', '北京邮电大学(宏福校区)', null, '北京', '北京市', '教育部', '本科', null, '北京市', '宏福校区位于北京市昌平区北七家镇，按实际就读城市补充', '公开资料核验', 'manual'),
+  ('合肥工业大学(宣城校区)', '合肥工业大学(宣城校区)', null, '安徽', '宣城市', '教育部', '本科', null, '宣城市', '宣城校区位于安徽省宣城市，按实际就读城市补充', '合肥工业大学宣城校区公开资料', 'manual'),
+  ('大连理工大学(盘锦校区)', '大连理工大学(盘锦校区)', null, '辽宁', '盘锦市', '教育部', '本科', null, '盘锦市', '盘锦校区位于辽宁省盘锦市辽东湾新区，按实际就读城市补充', '大连理工大学公开资料', 'manual'),
+  ('河北农业大学(渤海校区)', '河北农业大学(渤海校区)', '4113010086', '河北', '沧州市', '河北省', '本科', null, '沧州市', '渤海校区位于河北省沧州市黄骅市，按实际就读城市补充', '河北农业大学公开资料', 'manual'),
+  ('河北农业大学(秦皇岛校区)', '河北农业大学(秦皇岛校区)', '4113010086', '河北', '秦皇岛市', '河北省', '本科', null, '秦皇岛市', '秦皇岛校区位于河北省秦皇岛市，按实际就读城市补充', '河北农业大学公开资料', 'manual'),
+  ('河北金融学院(爱尔兰校区)', '河北金融学院(爱尔兰校区)', null, '爱尔兰', '都柏林', '河北省', '本科', null, '都柏林', '爱尔兰校区位于爱尔兰都柏林，按海外实际就读城市补充', '河北金融学院爱尔兰校区公开资料', 'manual'),
+  ('燕山大学(波兰校区)', '燕山大学(波兰校区)', null, '波兰', '格利维采', '河北省', '本科', null, '格利维采', '波兰校区与波兰西里西亚技术大学合作，按海外实际就读城市补充', '燕山大学欧洲学院公开资料', 'manual'),
+  ('电子科技大学(沙河校区)(成都市)', '电子科技大学(沙河校区)(成都市)', null, '四川', '成都市', '教育部', '本科', null, '成都市', '沙河校区位于四川省成都市，按实际就读城市补充', '电子科技大学公开资料', 'manual'),
+  ('阜阳师范大学信息工程学院', '阜阳师范大学信息工程学院', null, '安徽', '阜阳市', '安徽省教育厅', '本科', '民办', null, '学院位于安徽省阜阳市，按学校所在地补充', '阜阳师范大学信息工程学院公开资料', 'manual')
+on conflict (school_name_normalized) do update set
+  school_name = excluded.school_name,
+  moe_school_code = excluded.moe_school_code,
+  province = excluded.province,
+  city = excluded.city,
+  department = excluded.department,
+  education_level = excluded.education_level,
+  remark = excluded.remark,
+  campus_city = excluded.campus_city,
+  location_note = excluded.location_note,
+  location_source = excluded.location_source,
+  confidence = excluded.confidence;

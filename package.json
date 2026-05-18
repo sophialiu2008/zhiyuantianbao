@@ -1,0 +1,13 @@
+{
+  "name": "zhiyuantianbao",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "install": "npm ci --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run preview:zeabur --prefix frontend"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

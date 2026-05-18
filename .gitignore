@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+
+# Local environment
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+frontend/.env.local
+
+# Local runtime artifacts
+*.log
+__pycache__/
+*.pyc
+screenshots/
+frontend/screenshots/
+chrome-profile*/
+edge-profile*/
+frontend/chrome-profile*/
+frontend/edge-profile*/
+mobile-*.png
+supabase/.temp/
+
+# Raw local data and documents
+app/
+data/
+docs/
+tools/
+*.xlsx
+*.xls
+*.docx
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

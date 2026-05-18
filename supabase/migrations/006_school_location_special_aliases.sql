@@ -1,0 +1,68 @@
+insert into public.school_locations (
+  school_name,
+  school_name_normalized,
+  moe_school_code,
+  province,
+  city,
+  department,
+  education_level,
+  remark,
+  campus_city,
+  location_note,
+  location_source,
+  confidence
+) values
+  (
+    '西南大学(荣昌校区)',
+    '西南大学(荣昌校区)',
+    null,
+    '重庆',
+    '重庆市',
+    '教育部',
+    '本科',
+    null,
+    '重庆市',
+    '荣昌校区位于重庆市荣昌区学院路160号，按实际就读城市补充',
+    '西南大学荣昌校区官网: https://rcxq.swu.edu.cn/xq/xqjj.htm',
+    'manual'
+  ),
+  (
+    '河北工业大学(芬兰校区)',
+    '河北工业大学(芬兰校区)',
+    '4113010080',
+    '芬兰',
+    '拉彭兰塔/拉赫蒂',
+    '河北省',
+    '本科',
+    null,
+    '拉彭兰塔/拉赫蒂',
+    '芬兰校区为海外合作校区，官方资料显示地点涉及芬兰拉彭兰塔/拉赫蒂及天津培养安排',
+    '河北工业大学芬兰校区官网: https://www.hebut.edu.cn/jblm/hwjl/flxq/91769.htm',
+    'manual'
+  ),
+  (
+    '河北农业大学(保定校区)',
+    '河北农业大学(保定校区)',
+    '4113010086',
+    '河北',
+    '保定市',
+    '河北省',
+    '本科',
+    null,
+    '保定市',
+    '保定校区按实际就读城市补充',
+    '人工校正',
+    'manual'
+  )
+on conflict (school_name_normalized) do update set
+  school_name = excluded.school_name,
+  moe_school_code = excluded.moe_school_code,
+  province = excluded.province,
+  city = excluded.city,
+  department = excluded.department,
+  education_level = excluded.education_level,
+  remark = excluded.remark,
+  campus_city = excluded.campus_city,
+  location_note = excluded.location_note,
+  location_source = excluded.location_source,
+  confidence = excluded.confidence;
