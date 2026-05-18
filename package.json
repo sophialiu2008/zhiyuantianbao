@@ -2,6 +2,7 @@
   "name": "zhiyuantianbao",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.8.2",
   "scripts": {
     "install": "npm ci --prefix frontend",
     "build": "npm run build --prefix frontend",
