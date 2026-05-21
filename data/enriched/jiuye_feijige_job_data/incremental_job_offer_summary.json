@@ -1,0 +1,14 @@
+{
+  "source_file": "E:\\抖音\\douyin_pipeline\\data\\results\\jiuye_feijige_offer_extract.xlsx",
+  "import_batch": "就业飞机哥_2026_20260521",
+  "existing_school_major_pairs_seen": 476,
+  "candidate_offer_rows": 735,
+  "candidate_school_major_pairs": 233,
+  "company_alias_count": 565,
+  "company_review_required_count": 40,
+  "sql_chunk_count": 14,
+  "source_rows": 348,
+  "skipped_existing_school_major_rows": 95,
+  "skipped_no_school_major_rows": 4,
+  "skipped_no_offer_rows": 0
+}
