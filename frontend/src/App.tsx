@@ -6,10 +6,11 @@ import {
   fetchRecommendations,
   fetchSchoolProfile,
   isSupabaseConfigured,
+  loginOrRegisterAppUser,
   saveVolunteerList,
 } from "./supabase";
 import { JobsOverviewPanel, MajorDetailPanel, SchoolDetailPanel } from "./ProfileViews";
-import type { LocationOption, QueryState, RankRecord, Recommendation, RiskType, SchoolProfileRow, Subject } from "./types";
+import type { AppUser, LocationOption, QueryState, RankRecord, Recommendation, RiskType, SchoolProfileRow, Subject } from "./types";
 import "./styles.css";
 
 const initialQuery: QueryState = {
@@ -27,6 +28,7 @@ const initialQuery: QueryState = {
 
 const volunteerStorageKey = "hebei-gaokao-volunteers-v2";
 const deviceStorageKey = "hebei-gaokao-device-id";
+const appUserStorageKey = "hebei-gaokao-app-user-v1";
 const maxCompareSchools = 4;
 
 const riskLabels: Record<Exclude<RiskType, "all">, string> = {
@@ -85,7 +87,75 @@ interface ComparedSchool {
   rows: SchoolProfileRow[];
 }
 
+function LoginScreen({ onLogin }: { onLogin: (user: AppUser) => void }) {
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submitLogin(event: FormEvent) {
+    event.preventDefault();
+    const normalizedPhone = phone.replace(/\s+/g, "");
+    if (!/^1[3-9]\d{9}$/.test(normalizedPhone)) {
+      setError("请输入有效的11位手机号。");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const user = await loginOrRegisterAppUser(normalizedPhone);
+      localStorage.setItem(appUserStorageKey, JSON.stringify(user));
+      onLogin(user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登录失败，请稍后重试。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="auth-shell">
+      <section className="auth-panel">
+        <div className="auth-copy">
+          <span className="auth-kicker">河北高考志愿填报工具</span>
+          <h1>手机号注册 / 登录</h1>
+          <p>输入手机号即可进入系统。首次使用会自动创建账号，暂不需要短信验证码。</p>
+        </div>
+        <form className="auth-form" onSubmit={submitLogin}>
+          <label>
+            手机号
+            <input
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="例如：13800000000"
+            />
+          </label>
+          {error && <div className="error auth-error">{error}</div>}
+          {!isSupabaseConfigured && (
+            <div className="notice auth-error">
+              数据库尚未配置，暂时无法注册登录。
+            </div>
+          )}
+          <button disabled={loading || !isSupabaseConfigured} type="submit">
+            {loading ? "正在进入..." : "进入系统"}
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(appUserStorageKey);
+      return saved ? (JSON.parse(saved) as AppUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [query, setQuery] = useState<QueryState>(initialQuery);
   const [rank, setRank] = useState<RankRecord | null>(null);
   const [rows, setRows] = useState<Recommendation[]>([]);
@@ -164,11 +234,11 @@ export default function App() {
   }, [stats.match, stats.reach, stats.safe, volunteers.length]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !currentUser) return;
     void fetchLocationOptions()
       .then(setLocations)
       .catch(() => setLocations([]));
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     try {
@@ -517,10 +587,11 @@ export default function App() {
   }
 
   async function saveCloudVolunteers() {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !currentUser) return;
     setCloudStatus("保存中...");
     try {
-      const saved = await saveVolunteerList(getDeviceId(), volunteers);
+      const userId = currentUser.id;
+      const saved = await saveVolunteerList(userId, volunteers);
       setCloudStatus(`已保存到云端：${new Date(saved.updated_at).toLocaleString("zh-CN")}`);
     } catch (err) {
       setCloudStatus(err instanceof Error ? `保存失败：${err.message}` : "保存失败");
@@ -528,10 +599,11 @@ export default function App() {
   }
 
   async function restoreCloudVolunteers() {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !currentUser) return;
     setCloudStatus("读取中...");
     try {
-      const latest = await fetchLatestVolunteerList(getDeviceId());
+      const userId = currentUser.id;
+      const latest = await fetchLatestVolunteerList(userId);
       if (!latest) {
         setCloudStatus("云端暂无已保存志愿表。");
         return;
@@ -541,6 +613,11 @@ export default function App() {
     } catch (err) {
       setCloudStatus(err instanceof Error ? `读取失败：${err.message}` : "读取失败");
     }
+  }
+
+  function logout() {
+    localStorage.removeItem(appUserStorageKey);
+    setCurrentUser(null);
   }
 
   function renderVolunteerPanelContent() {
@@ -591,6 +668,10 @@ export default function App() {
     );
   }
 
+  if (!currentUser) {
+    return <LoginScreen onLogin={setCurrentUser} />;
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -605,6 +686,12 @@ export default function App() {
           <span className={isSupabaseConfigured ? "status ready" : "status warn"}>
             {isSupabaseConfigured ? "数据库已连接" : "需要配置数据库"}
           </span>
+          <div className="user-menu">
+            <span>{currentUser.phone}</span>
+            <button className="secondary-button" type="button" onClick={logout}>
+              退出
+            </button>
+          </div>
         </div>
       </header>
 

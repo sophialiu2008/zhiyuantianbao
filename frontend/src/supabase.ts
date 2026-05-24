@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type {
+  AppUser,
   JobOfferSearchFilters,
   JobOfferSearchResult,
   JobsOverview,
@@ -30,6 +31,19 @@ export const supabase = isSupabaseConfigured
       },
     })
   : null;
+
+export async function loginOrRegisterAppUser(phone: string): Promise<AppUser> {
+  if (!supabase) {
+    throw new Error("Supabase 尚未配置。");
+  }
+
+  const { data, error } = await supabase.rpc("login_or_register_app_user", {
+    p_phone: phone.trim(),
+  });
+
+  if (error) throw error;
+  return data as AppUser;
+}
 
 export async function fetchRank(query: QueryState): Promise<RankRecord | null> {
   if (!supabase) {

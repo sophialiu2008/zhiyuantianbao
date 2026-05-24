@@ -1,6 +1,15 @@
 export type Subject = "physics" | "history";
 export type RiskType = "all" | "reach" | "match" | "safe";
 
+export interface AppUser {
+  id: string;
+  phone: string;
+  display_name: string;
+  status: "active" | "disabled";
+  created_at: string;
+  last_login_at: string;
+}
+
 export interface RankRecord {
   year: number;
   subject: Subject;
