@@ -139,6 +139,10 @@ function LoginScreen({ onLogin }: { onLogin: (user: AppUser) => void }) {
               <strong>志愿表云端保存</strong>
               <span>登录后可恢复自己的志愿清单</span>
             </div>
+            <div>
+              <strong>公职岗位匹配</strong>
+              <span>按专业查看可报考的公务员和军队文职岗位</span>
+            </div>
           </div>
         </div>
         <div className="auth-copy auth-copy-legacy" aria-hidden="true">
