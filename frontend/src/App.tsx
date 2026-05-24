@@ -235,13 +235,6 @@ export default function App() {
     }));
   }, [compareMajorFilter, comparedSchools]);
 
-  const selectedCities = useMemo(() => {
-    const source = query.provinces.length
-      ? locations.filter((item) => query.provinces.includes(item.province))
-      : locations;
-    return Array.from(new Set(source.flatMap((item) => item.cities))).sort((a, b) => a.localeCompare(b, "zh-CN"));
-  }, [locations, query.provinces]);
-
   const stats = useMemo(() => {
     return volunteers.reduce(
       (acc, item) => {
@@ -328,33 +321,16 @@ export default function App() {
   }
 
   function updateProvinces(provinces: string[]) {
-    const allowedCities = new Set(
-      locations.filter((item) => !provinces.length || provinces.includes(item.province)).flatMap((item) => item.cities),
-    );
     setQuery((current) => ({
       ...current,
       provinces,
-      cities: current.cities.filter((city) => allowedCities.has(city)),
+      cities: [],
       page: 1,
     }));
   }
 
   function toggleProvince(province: string) {
     updateProvinces(toggleValue(query.provinces, province));
-  }
-
-  function toggleCity(city: string) {
-    setQuery((current) => ({ ...current, cities: toggleValue(current.cities, city), page: 1 }));
-  }
-
-  function applyRegionShortcut(region: "jingjinji" | "yangtze" | "pearl" | "chengyu") {
-    const map = {
-      jingjinji: ["北京", "天津", "河北"],
-      yangtze: ["上海", "江苏", "浙江", "安徽"],
-      pearl: ["广东"],
-      chengyu: ["四川", "重庆"],
-    };
-    updateProvinces(map[region]);
   }
 
   function submit(event: FormEvent) {
@@ -833,12 +809,6 @@ export default function App() {
                     清空
                   </button>
                 </div>
-                <div className="shortcut-row">
-                  <button type="button" onClick={() => applyRegionShortcut("jingjinji")}>京津冀</button>
-                  <button type="button" onClick={() => applyRegionShortcut("yangtze")}>长三角</button>
-                  <button type="button" onClick={() => applyRegionShortcut("pearl")}>珠三角</button>
-                  <button type="button" onClick={() => applyRegionShortcut("chengyu")}>成渝</button>
-                </div>
                 <div className="check-grid province-grid">
                   {locations.map((item) => (
                     <label key={item.province} className="check-item">
@@ -853,25 +823,6 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="multi-filter">
-                <div className="filter-head">
-                  <span>所在城市（可多选）</span>
-                  <button type="button" className="link-button" onClick={() => updateQuery({ cities: [], page: 1 })}>
-                    清空
-                  </button>
-                </div>
-                <div className="check-grid city-grid">
-                  {selectedCities.slice(0, 80).map((city) => (
-                    <label key={city} className="check-item">
-                      <input type="checkbox" checked={query.cities.includes(city)} onChange={() => toggleCity(city)} />
-                      {city}
-                    </label>
-                  ))}
-                </div>
-                <p className="hint">
-                  {query.provinces.length ? "城市列表已按所选省份过滤。" : "未选省份时显示全部城市，建议先选省份。"}
-                </p>
-              </div>
             </div>
           </div>
 
