@@ -117,6 +117,11 @@ function LoginScreen({ onLogin }: { onLogin: (user: AppUser) => void }) {
     <main className="auth-shell">
       <section className="auth-panel" aria-labelledby="auth-title">
         <div className="auth-copy auth-copy-redesign">
+          <div className="auth-brand-card">
+            <span>河北高考志愿填报系统</span>
+            <strong>志愿工作台</strong>
+            <p>推荐、院校、专业、就业数据集中查看</p>
+          </div>
           <span className="auth-kicker">河北高考志愿填报系统</span>
           <h1 id="auth-title">用手机号进入你的志愿工作台</h1>
           <p>首次使用会自动创建账号，后续可继续查看推荐结果、就业样本、院校对比和已保存的志愿表。</p>
