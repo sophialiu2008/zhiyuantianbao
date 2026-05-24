@@ -115,13 +115,37 @@ function LoginScreen({ onLogin }: { onLogin: (user: AppUser) => void }) {
 
   return (
     <main className="auth-shell">
-      <section className="auth-panel">
-        <div className="auth-copy">
+      <section className="auth-panel" aria-labelledby="auth-title">
+        <div className="auth-copy auth-copy-redesign">
+          <span className="auth-kicker">河北高考志愿填报系统</span>
+          <h1 id="auth-title">用手机号进入你的志愿工作台</h1>
+          <p>首次使用会自动创建账号，后续可继续查看推荐结果、就业样本、院校对比和已保存的志愿表。</p>
+
+          <div className="auth-proof-grid" aria-label="系统能力">
+            <div>
+              <strong>三年投档趋势</strong>
+              <span>按分数、位次、城市和院校标签筛选</span>
+            </div>
+            <div>
+              <strong>专业就业样本</strong>
+              <span>展示同校同专业 offer 与薪资信息</span>
+            </div>
+            <div>
+              <strong>志愿表云端保存</strong>
+              <span>登录后可恢复自己的志愿清单</span>
+            </div>
+          </div>
+        </div>
+        <div className="auth-copy auth-copy-legacy" aria-hidden="true">
           <span className="auth-kicker">河北高考志愿填报工具</span>
           <h1>手机号注册 / 登录</h1>
           <p>输入手机号即可进入系统。首次使用会自动创建账号，暂不需要短信验证码。</p>
         </div>
         <form className="auth-form" onSubmit={submitLogin}>
+          <div className="auth-form-head">
+            <span>登录 / 注册</span>
+            <strong>手机号直达</strong>
+          </div>
           <label>
             手机号
             <input
@@ -130,8 +154,10 @@ function LoginScreen({ onLogin }: { onLogin: (user: AppUser) => void }) {
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               placeholder="例如：13800000000"
+              aria-describedby="phone-helper"
             />
           </label>
+          <p id="phone-helper" className="auth-helper">当前版本暂不发送验证码，请使用自己的常用手机号。</p>
           {error && <div className="error auth-error">{error}</div>}
           {!isSupabaseConfigured && (
             <div className="notice auth-error">
@@ -141,6 +167,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: AppUser) => void }) {
           <button disabled={loading || !isSupabaseConfigured} type="submit">
             {loading ? "正在进入..." : "进入系统"}
           </button>
+          <p className="auth-footnote">进入即表示创建或登录账号，后续可升级为短信验证码登录。</p>
         </form>
       </section>
     </main>
