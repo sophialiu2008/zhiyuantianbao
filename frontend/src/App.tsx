@@ -257,13 +257,21 @@ export default function App() {
     const totalCount = volunteers.length;
     const reachRatio = stats.reach / totalCount;
     const safeRatio = stats.safe / totalCount;
+    const matchRatio = stats.match / totalCount;
+    const targetReachMin = Math.max(1, Math.round(totalCount * 0.16));
+    const targetReachMax = Math.max(targetReachMin, Math.round(totalCount * 0.26));
+    const targetMatchMin = Math.max(1, Math.round(totalCount * 0.42));
+    const targetMatchMax = Math.max(targetMatchMin, Math.round(totalCount * 0.52));
+    const targetSafeMin = Math.max(1, Math.round(totalCount * 0.22));
     const messages: string[] = [];
 
     if (totalCount < 20) messages.push("当前志愿数量偏少，建议先扩充候选范围，再做排序取舍。");
-    if (reachRatio > 0.4) messages.push("冲的比例偏高，建议增加稳和保，降低整体滑档风险。");
-    if (safeRatio < 0.2 && totalCount >= 10) messages.push("保的比例偏低，建议补充录取位次明显更稳的专业。");
-    if (stats.match >= stats.reach && stats.match >= stats.safe && safeRatio >= 0.2) {
-      messages.push("当前冲稳保结构较均衡，可以继续按学校偏好调整顺序。");
+    if (stats.reach > targetReachMax || reachRatio > 0.32) messages.push(`冲的比例偏高，建议控制在 ${targetReachMin}-${targetReachMax} 个左右。`);
+    if (stats.reach < targetReachMin && totalCount >= 20) messages.push(`冲的数量偏少，可补充到 ${targetReachMin}-${targetReachMax} 个，保留适度上探空间。`);
+    if (stats.match < targetMatchMin && totalCount >= 20) messages.push(`稳的数量偏少，建议补到 ${targetMatchMin}-${targetMatchMax} 个，作为志愿表主体。`);
+    if (safeRatio < 0.22 && totalCount >= 10) messages.push(`保的比例偏低，建议至少 ${targetSafeMin} 个，用录取位次明显更稳的专业兜底。`);
+    if (matchRatio >= 0.4 && reachRatio <= 0.3 && safeRatio >= 0.22) {
+      messages.push("当前冲稳保结构接近推荐比例，可以继续按学校、城市和专业偏好调整顺序。");
     }
 
     return messages.length ? messages : ["当前结构暂无明显问题。"];
