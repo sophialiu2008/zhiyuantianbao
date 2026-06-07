@@ -41,7 +41,19 @@ export async function loginOrRegisterAppUser(phone: string): Promise<AppUser> {
     p_phone: phone.trim(),
   });
 
-  if (error) throw error;
+  if (error) {
+    const message = String(error.message || "");
+    const details = String((error as { details?: string }).details || "");
+    const hint = String((error as { hint?: string }).hint || "");
+    const combined = `${message} ${details} ${hint}`;
+    if (combined.includes("Could not find the function") || combined.includes("PGRST202") || combined.includes("404")) {
+      throw new Error("登录接口尚未部署或 Supabase schema cache 未刷新，请先执行登录注册数据库迁移。");
+    }
+    if (combined.includes("Failed to fetch") || combined.includes("ERR_CONNECTION_CLOSED") || combined.includes("NetworkError")) {
+      throw new Error("无法连接 Supabase 数据库，请检查网络或稍后重试。");
+    }
+    throw error;
+  }
   return data as AppUser;
 }
 
