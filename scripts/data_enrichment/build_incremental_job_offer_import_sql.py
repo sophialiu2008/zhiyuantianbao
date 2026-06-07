@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -16,7 +17,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE_XLSX = Path(r"E:\抖音\douyin_pipeline\data\results\jiuye_feijige_offer_extract.xlsx")
-OUTPUT_DIR = ROOT / "data" / "enriched" / "jiuye_feijige_job_data"
+OUTPUT_DIR = ROOT / "data" / "enriched" / os.environ.get("JOB_OUTPUT_SUBDIR", "jiuye_feijige_job_data")
 CHUNKS_DIR = OUTPUT_DIR / "import_chunks"
 OFFERS_CSV = OUTPUT_DIR / "incremental_job_offers_cleaned.csv"
 COMPANY_ALIASES_CSV = OUTPUT_DIR / "company_name_aliases.csv"
@@ -24,10 +25,10 @@ COMPANY_REVIEW_CSV = OUTPUT_DIR / "company_name_review_required.csv"
 ISSUES_CSV = OUTPUT_DIR / "incremental_job_offer_issues.csv"
 SUMMARY_JSON = OUTPUT_DIR / "incremental_job_offer_summary.json"
 
-IMPORT_BATCH = "就业飞机哥_2026_20260521"
-SOURCE_KEY = "jiuye_feijige_offer_extract_2026"
-SOURCE_NAME = "jiuye_feijige_offer_extract.xlsx"
-SOURCE_TYPE = "视频转写/OCR整理就业offer"
+IMPORT_BATCH = os.environ.get("JOB_IMPORT_BATCH", "就业飞机哥_2026_20260521")
+SOURCE_KEY = os.environ.get("JOB_SOURCE_KEY", "jiuye_feijige_offer_extract_2026")
+SOURCE_NAME = os.environ.get("JOB_SOURCE_NAME", "jiuye_feijige_offer_extract.xlsx")
+SOURCE_TYPE = os.environ.get("JOB_SOURCE_TYPE", "视频转写/OCR整理就业offer")
 OFFER_CHUNK_SIZE = 80
 ALIAS_CHUNK_SIZE = 300
 
