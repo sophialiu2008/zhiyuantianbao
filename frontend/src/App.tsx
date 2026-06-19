@@ -1307,9 +1307,14 @@ export default function App() {
                   <h2>招生计划查询</h2>
                   <p className="muted">按河北省教育考试院招生计划查询样式展示 2026 年物理科目组合计划。</p>
                 </div>
-                <span className="muted">
-                  {planTotal ? `第 ${planFilters.page} / ${planTotalPages} 页，共 ${formatNumber(planTotal)} 条` : `${formatNumber(planEntries.reduce((sum, item) => sum + Number(item.row_count || 0), 0))} 条计划`}
-                </span>
+                <div className="plan-title-actions">
+                  <span className="muted">
+                    {planTotal ? `第 ${planFilters.page} / ${planTotalPages} 页，共 ${formatNumber(planTotal)} 条` : `${formatNumber(planEntries.reduce((sum, item) => sum + Number(item.row_count || 0), 0))} 条计划`}
+                  </span>
+                  <button className="legacy-home-button" type="button" onClick={() => setActiveView("recommendations")}>
+                    返回主页
+                  </button>
+                </div>
               </div>
 
               {planError && <div className="error">{planError}</div>}

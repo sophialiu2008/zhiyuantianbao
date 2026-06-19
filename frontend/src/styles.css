@@ -772,6 +772,29 @@ th {
   margin-top: 4px;
 }
 
+.plan-title-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.legacy-home-button {
+  height: 40px;
+  min-width: 116px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 3px;
+  background: #337ab7;
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.legacy-home-button:hover {
+  background: #286090;
+}
+
 .inline-checkbox {
   display: flex;
   align-items: center;
