@@ -300,10 +300,12 @@ export interface AdmissionPlanSearchFilters {
   batch: string;
   planNature: string;
   volunteerMode: string;
-  subjectRequirement: string;
+  subjectRequirements: string[];
   schoolTag: string;
   highLevelSports: boolean;
   keyword: string;
+  schoolQuery: string;
+  majorQuery: string;
   page: number;
   pageSize: number;
 }

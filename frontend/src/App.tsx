@@ -47,10 +47,12 @@ const initialPlanFilters: AdmissionPlanSearchFilters = {
   batch: "",
   planNature: "",
   volunteerMode: "",
-  subjectRequirement: "",
+  subjectRequirements: [],
   schoolTag: "",
   highLevelSports: false,
   keyword: "",
+  schoolQuery: "",
+  majorQuery: "",
   page: 1,
   pageSize: 50,
 };
@@ -69,6 +71,8 @@ const riskLabels: Record<Exclude<RiskType, "all">, string> = {
 
 const batchOptions = ["本科批", "本科提前批A段", "本科提前批B段", "本科提前批C段", "专科提前批", "专科批"];
 const subjectRequirementOptions = ["不限", "化学", "生物", "思想政治", "地理"];
+const planSubjectRequirementOptions = ["化学", "生物", "化学和生物", "化学或生物", "化学或思想政治", "化学或地理", "生物或思想政治", "生物或地理", "不限"];
+const schoolTagOptions = ["公办", "民办", "独立学院", "中外合作办学", "内地与港澳台地区合作办学"];
 
 const matchConfidenceLabels: Record<Recommendation["match_confidence"], string> = {
   code_and_name: "代码+名称匹配",
@@ -263,6 +267,7 @@ export default function App() {
   const [planRows, setPlanRows] = useState<AdmissionPlanRow[]>([]);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState("");
+  const [planJumpPage, setPlanJumpPage] = useState("1");
   const [loading, setLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState("");
@@ -346,6 +351,10 @@ export default function App() {
   }, [currentUser]);
 
   useEffect(() => {
+    setPlanJumpPage(String(planFilters.page));
+  }, [planFilters.page]);
+
+  useEffect(() => {
     try {
       const saved = localStorage.getItem(volunteerStorageKey);
       if (saved) setVolunteers(JSON.parse(saved) as Recommendation[]);
@@ -421,6 +430,14 @@ export default function App() {
     }));
   }
 
+  function togglePlanSubjectRequirement(requirement: string) {
+    setPlanFilters((current) => ({
+      ...current,
+      subjectRequirements: toggleValue(current.subjectRequirements, requirement),
+      page: 1,
+    }));
+  }
+
   async function loadPlanEntries(subject: Subject) {
     setPlanLoading(true);
     setPlanError("");
@@ -474,10 +491,14 @@ export default function App() {
   }
 
   function changePlanPage(direction: -1 | 1) {
-    const nextPage = Math.min(planTotalPages, Math.max(1, planFilters.page + direction));
+    void goPlanPage(planFilters.page + direction);
+  }
+
+  async function goPlanPage(page: number) {
+    const nextPage = Math.min(planTotalPages, Math.max(1, page));
     const next = { ...planFilters, page: nextPage };
     setPlanFilters(next);
-    void runPlanSearch(next);
+    await runPlanSearch(next);
   }
 
   function submit(event: FormEvent) {
@@ -892,6 +913,7 @@ export default function App() {
       )}
 
       <main className={activeView === "plans" ? "layout plan-layout" : "layout"}>
+        {activeView !== "plans" && (
         <section className="panel query-panel">
           <div className="panel-title">
             <h2>位次查询</h2>
@@ -1102,8 +1124,9 @@ export default function App() {
             </div>
           </div>
         </section>
+        )}
 
-        <section className="panel results-panel">
+        <section className={activeView === "plans" ? "panel results-panel plan-results-panel" : "panel results-panel"}>
           <div className="view-tabs">
             <button
               className={activeView === "recommendations" ? "active" : ""}
@@ -1278,85 +1301,16 @@ export default function App() {
               </div>
             </>
           ) : activeView === "plans" ? (
-            <div className="plan-query-page">
+            <div className="plan-query-page legacy-plan-page">
               <div className="panel-title">
                 <div>
                   <h2>招生计划查询</h2>
-                  <p className="muted">按批次、计划性质和志愿模式查询 2026 河北招生计划。</p>
+                  <p className="muted">按河北省教育考试院招生计划查询样式展示 2026 年物理科目组合计划。</p>
                 </div>
                 <span className="muted">
                   {planTotal ? `第 ${planFilters.page} / ${planTotalPages} 页，共 ${formatNumber(planTotal)} 条` : `${formatNumber(planEntries.reduce((sum, item) => sum + Number(item.row_count || 0), 0))} 条计划`}
                 </span>
               </div>
-
-              <form className="plan-search-bar" onSubmit={submitPlanSearch}>
-                <label>
-                  科目组合
-                  <select
-                    value={planFilters.subject}
-                    onChange={(event) => {
-                      const subject = event.target.value as Subject;
-                      const next = { ...initialPlanFilters, subject };
-                      setPlanFilters(next);
-                      setPlanRows([]);
-                      void loadPlanEntries(subject);
-                    }}
-                  >
-                    <option value="physics">物理科目组合</option>
-                    <option value="history" disabled>历史科目组合（待导入）</option>
-                  </select>
-                </label>
-                <label>
-                  批次
-                  <select value={planFilters.batch} onChange={(event) => updatePlanFilters({ batch: event.target.value, page: 1 })}>
-                    <option value="">全部批次</option>
-                    {batchOptions.map((batch) => <option key={batch} value={batch}>{batch}</option>)}
-                  </select>
-                </label>
-                <label>
-                  计划性质
-                  <select value={planFilters.planNature} onChange={(event) => updatePlanFilters({ planNature: event.target.value, page: 1 })}>
-                    <option value="">全部</option>
-                    <option value="非定向">非定向</option>
-                    <option value="定向">定向</option>
-                  </select>
-                </label>
-                <label>
-                  院校性质
-                  <select value={planFilters.schoolTag} onChange={(event) => updatePlanFilters({ schoolTag: event.target.value, page: 1 })}>
-                    <option value="">请选择</option>
-                    <option value="公办">公办</option>
-                    <option value="民办">民办</option>
-                    <option value="中外合作办学">中外合作办学</option>
-                  </select>
-                </label>
-                <label>
-                  再选科目
-                  <select value={planFilters.subjectRequirement} onChange={(event) => updatePlanFilters({ subjectRequirement: event.target.value, page: 1 })}>
-                    <option value="">全部</option>
-                    {subjectRequirementOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-                  </select>
-                </label>
-                <label className="plan-keyword-field">
-                  搜索
-                  <input
-                    value={planFilters.keyword}
-                    onChange={(event) => updatePlanFilters({ keyword: event.target.value, page: 1 })}
-                    placeholder="院校、专业、代码、备注"
-                  />
-                </label>
-                <label className="inline-checkbox plan-extra-condition">
-                  <input
-                    type="checkbox"
-                    checked={planFilters.highLevelSports}
-                    onChange={(event) => updatePlanFilters({ highLevelSports: event.target.checked, page: 1 })}
-                  />
-                  高水平运动队
-                </label>
-                <button type="submit" disabled={planLoading || !isSupabaseConfigured}>
-                  {planLoading ? "查询中" : "查询计划"}
-                </button>
-              </form>
 
               {planError && <div className="error">{planError}</div>}
 
@@ -1406,15 +1360,17 @@ export default function App() {
                 </div>
               )}
 
-              <div className="plan-detail-section">
-                {planRows.length > 0 && (
-                  <div className="plan-context-bar">
-                    <div>
-                      <b>批次：{planFilters.batch || "全部"}</b>
-                      <span>计划性质：{planFilters.planNature || "全部"}　科类：{planFilters.subject === "physics" ? "物理科目组合" : "历史科目组合"}　志愿模式：{planFilters.volunteerMode || "全部"}</span>
+              {planRows.length > 0 && (
+                <div className="plan-detail-section legacy-plan-detail">
+                  <div className="legacy-plan-context">
+                    <div className="legacy-context-text">
+                      <span>批次：{planFilters.batch || "全部"}</span>
+                      <span>计划性质：{planFilters.planNature || "全部"}</span>
+                      <span>科类：{planFilters.subject === "physics" ? "物理科目组合" : "历史科目组合"}</span>
+                      <span>志愿模式：{planFilters.volunteerMode || "全部"}</span>
                     </div>
                     <button
-                      className="secondary-button"
+                      className="legacy-return-button"
                       type="button"
                       onClick={() => {
                         setPlanRows([]);
@@ -1424,74 +1380,140 @@ export default function App() {
                       返回批次列表
                     </button>
                   </div>
-                )}
-                <div className="panel-title compact-title">
-                  <div>
-                    <h3>计划明细</h3>
-                    <p className="muted">
-                      {planFilters.batch ? `${planFilters.batch} / ${planFilters.planNature || "全部性质"} / ${planFilters.volunteerMode || "全部模式"}` : "选择入口或使用筛选条件查询"}
-                    </p>
-                  </div>
-                  <span className="muted">{planTotal ? `${formatNumber(planTotal)} 条` : "未查询"}</span>
-                </div>
-                <div className="table-wrap plan-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>序号</th>
-                        <th>院校性质</th>
-                        <th>院校代号</th>
-                        <th>院校名称</th>
-                        <th>专业代号</th>
-                        <th>专业名称</th>
-                        <th>专业备注</th>
-                        <th>资格类型</th>
-                        <th>再选科目要求</th>
-                        <th>计划数</th>
-                        <th>学制</th>
-                        <th>学费元/年</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {planRows.map((row, index) => (
-                        <tr key={row.id}>
-                          <td>{(planFilters.page - 1) * planFilters.pageSize + index + 1}</td>
-                          <td>{row.school_tags.join("、") || "-"}</td>
-                          <td>{row.school_code}</td>
-                          <td className="ellipsis-cell" title={row.school_name}>{row.school_name}</td>
-                          <td>{row.major_code}</td>
-                          <td className="ellipsis-cell" title={row.major_name}>{row.major_name}</td>
-                          <td className="remark-cell" title={row.major_remark}>{row.major_remark || "-"}</td>
-                          <td>{row.qualification_type || "-"}</td>
-                          <td>{row.subject_requirement || "不限"}</td>
-                          <td>{row.plan_count ?? "-"}</td>
-                          <td>{row.duration_years ?? "-"}</td>
-                          <td>{row.tuition ? formatNumber(row.tuition) : "-"}</td>
-                          <td>
-                            <button
-                              className="small secondary-button"
-                              type="button"
-                              onClick={() => setSelectedMajorProfile({ schoolName: row.school_name, majorName: row.major_name })}
-                            >
-                              查看
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {!planRows.length && !planLoading && (
+
+                  <form className="legacy-plan-filters" onSubmit={submitPlanSearch}>
+                    <div className="legacy-filter-row legacy-main-filter-row">
+                      <span className="legacy-field-label">院 校 性 质</span>
+                      <select
+                        className="legacy-select"
+                        value={planFilters.schoolTag}
+                        onChange={(event) => updatePlanFilters({ schoolTag: event.target.value, page: 1 })}
+                      >
+                        <option value="">请选择</option>
+                        {schoolTagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+                      </select>
+                      <span className="legacy-field-label legacy-field-label-short">院校</span>
+                      <input
+                        className="legacy-text-input legacy-input-school"
+                        value={planFilters.schoolQuery}
+                        onChange={(event) => updatePlanFilters({ schoolQuery: event.target.value, page: 1 })}
+                        placeholder="院校代号或名称"
+                      />
+                      <span className="legacy-field-label legacy-field-label-short">专业</span>
+                      <input
+                        className="legacy-text-input legacy-input-major"
+                        value={planFilters.majorQuery}
+                        onChange={(event) => updatePlanFilters({ majorQuery: event.target.value, page: 1 })}
+                        placeholder="专业代号或名称"
+                      />
+                    </div>
+
+                    <div className="legacy-filter-row legacy-subject-row">
+                      <span className="legacy-field-label">再选科目要求</span>
+                      <div className="legacy-checkbox-line">
+                        {planSubjectRequirementOptions.map((requirement) => (
+                          <label key={requirement} className="legacy-checkbox">
+                            {requirement}
+                            <input
+                              type="checkbox"
+                              checked={planFilters.subjectRequirements.includes(requirement)}
+                              onChange={() => togglePlanSubjectRequirement(requirement)}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="legacy-filter-row legacy-more-row">
+                      <span className="legacy-field-label">更 多 条 件</span>
+                      <label className="legacy-checkbox legacy-sports-checkbox">
+                        高水平运动队
+                        <input
+                          type="checkbox"
+                          checked={planFilters.highLevelSports}
+                          onChange={(event) => updatePlanFilters({ highLevelSports: event.target.checked, page: 1 })}
+                        />
+                      </label>
+                      <button className="legacy-query-button" type="submit" disabled={planLoading || !isSupabaseConfigured}>
+                        {planLoading ? "查询中" : "查询"}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="table-wrap plan-table legacy-plan-table">
+                    <table>
+                      <thead>
                         <tr>
-                          <td colSpan={13} className="empty">点击上方“进入”或使用筛选条件查询招生计划。</td>
+                          <th>序号</th>
+                          <th>院校<br />性质</th>
+                          <th>院校<br />代号</th>
+                          <th>院校名称</th>
+                          <th>专业<br />代号</th>
+                          <th>专业名称</th>
+                          <th>专业备注</th>
+                          <th>资格类型</th>
+                          <th>再选科目<br />要求</th>
+                          <th>计划数</th>
+                          <th>学制</th>
+                          <th>学费<br />元/年</th>
+                          <th>操作</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {planRows.map((row, index) => (
+                          <tr key={row.id}>
+                            <td>{(planFilters.page - 1) * planFilters.pageSize + index + 1}</td>
+                            <td>{row.school_tags.join("、") || "-"}</td>
+                            <td>{row.school_code}</td>
+                            <td className="ellipsis-cell" title={row.school_name}>{row.school_name}</td>
+                            <td>{row.major_code}</td>
+                            <td className="ellipsis-cell" title={row.major_name}>{row.major_name}</td>
+                            <td className="remark-cell" title={row.major_remark}>{row.major_remark || ""}</td>
+                            <td>{row.qualification_type || ""}</td>
+                            <td>{row.subject_requirement || "不限"}</td>
+                            <td>{row.plan_count ?? "-"}</td>
+                            <td>{row.duration_years ?? "-"}</td>
+                            <td>{row.tuition ? formatNumber(row.tuition) : "-"}</td>
+                            <td>
+                              <button
+                                className="legacy-view-button"
+                                type="button"
+                                onClick={() => setSelectedMajorProfile({ schoolName: row.school_name, majorName: row.major_name })}
+                              >
+                                查看
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="legacy-pagination">
+                    <button disabled={planFilters.page <= 1 || planLoading} onClick={() => void goPlanPage(1)} type="button">首页</button>
+                    <button disabled={planFilters.page <= 1 || planLoading} onClick={() => changePlanPage(-1)} type="button">上一页</button>
+                    <button disabled={planFilters.page >= planTotalPages || planLoading || planTotal === 0} onClick={() => changePlanPage(1)} type="button">下一页</button>
+                    <button disabled={planFilters.page >= planTotalPages || planLoading || planTotal === 0} onClick={() => void goPlanPage(planTotalPages)} type="button">末页</button>
+                    <span className="legacy-pagination-text">到第</span>
+                    <input
+                      value={planJumpPage}
+                      onChange={(event) => setPlanJumpPage(event.target.value.replace(/[^\d]/g, ""))}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void goPlanPage(Number(planJumpPage) || 1);
+                        }
+                      }}
+                      aria-label="跳转页码"
+                    />
+                    <span className="legacy-pagination-text">页</span>
+                    <button disabled={planLoading || planTotal === 0} onClick={() => void goPlanPage(Number(planJumpPage) || 1)} type="button">确定</button>
+                    <span className="legacy-pagination-summary">共 {planTotalPages} 页</span>
+                    <span className="legacy-pagination-summary">当前为第 {planFilters.page} 页</span>
+                    <span className="legacy-pagination-summary">共 {formatNumber(planTotal)} 条</span>
+                  </div>
                 </div>
-                <div className="pager">
-                  <button disabled={planFilters.page <= 1 || planLoading || !planRows.length} onClick={() => changePlanPage(-1)} type="button">上一页</button>
-                  <button disabled={planFilters.page >= planTotalPages || planLoading || planTotal === 0} onClick={() => changePlanPage(1)} type="button">下一页</button>
-                </div>
-              </div>
+              )}
             </div>
           ) : activeView === "volunteers" ? (
             <div className="volunteer-page">
