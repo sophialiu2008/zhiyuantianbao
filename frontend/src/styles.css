@@ -299,6 +299,10 @@ code {
   align-items: start;
 }
 
+.layout.plan-layout {
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+}
+
 .panel {
   padding: 16px;
   border: 1px solid var(--border);
@@ -326,7 +330,7 @@ code {
 
 .view-tabs {
   display: inline-grid;
-  grid-template-columns: repeat(4, minmax(0, 110px));
+  grid-template-columns: repeat(5, minmax(0, 110px));
   gap: 4px;
   margin-bottom: 14px;
   padding: 4px;
@@ -439,6 +443,11 @@ code {
 .quick-action-form button {
   height: 46px;
   padding: 0 12px;
+}
+
+.quick-plan-button {
+  min-height: 44px;
+  width: 100%;
 }
 
 .compare-selection {
@@ -715,11 +724,162 @@ th {
   background: #dbeafe;
 }
 
+.risk.unknown {
+  color: #475467;
+  background: #eef2f6;
+}
+
 .pager {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 12px;
+}
+
+.plan-query-page {
+  display: grid;
+  gap: 14px;
+}
+
+.plan-search-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(118px, 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.plan-search-bar button {
+  height: 46px;
+}
+
+.plan-keyword-field {
+  grid-column: span 2;
+}
+
+.inline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 46px;
+}
+
+.inline-checkbox input {
+  width: 16px;
+  min-height: 16px;
+}
+
+.plan-extra-condition {
+  align-self: end;
+  padding: 0 4px;
+}
+
+.plan-entry-list {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-entry-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.plan-entry-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-entry-card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.plan-entry-card-head span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.compact-table {
+  max-height: none;
+}
+
+.compact-table table {
+  min-width: 760px;
+}
+
+.compact-table th,
+.compact-table td {
+  text-align: center;
+}
+
+.primary-small {
+  min-width: 54px;
+}
+
+.plan-detail-section {
+  display: grid;
+  gap: 10px;
+}
+
+.plan-context-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.plan-context-bar div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.plan-context-bar span {
+  color: #111827;
+}
+
+.plan-table table {
+  min-width: 1320px;
+}
+
+.plan-table tbody tr:nth-child(even) {
+  background: #dbe7ff;
+}
+
+.cell-note {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.remark-cell {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ellipsis-cell {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recommendation-cards {
@@ -1753,7 +1913,7 @@ button.remove {
   .view-tabs {
     display: none;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .school-mode-tabs {
@@ -1801,6 +1961,36 @@ button.remove {
   .quick-action-form button {
     width: 100%;
     height: 42px;
+  }
+
+  .plan-search-bar {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .plan-keyword-field {
+    grid-column: auto;
+  }
+
+  .plan-search-bar button {
+    height: 42px;
+  }
+
+  .plan-entry-card {
+    padding: 10px;
+  }
+
+  .plan-entry-card-head {
+    display: grid;
+  }
+
+  .compact-table table {
+    min-width: 680px;
+  }
+
+  .plan-context-bar,
+  .plan-context-bar div {
+    display: grid;
   }
 
   .table-wrap,

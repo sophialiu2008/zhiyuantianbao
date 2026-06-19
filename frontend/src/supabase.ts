@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type {
+  AdmissionPlanEntry,
+  AdmissionPlanRow,
+  AdmissionPlanSearchFilters,
   AppUser,
   JobOfferSearchFilters,
   JobOfferSearchResult,
@@ -105,6 +108,43 @@ export async function fetchLocationOptions(): Promise<LocationOption[]> {
   const { data, error } = await supabase.rpc("location_options");
   if (error) throw error;
   return (data || []) as LocationOption[];
+}
+
+export async function fetchAdmissionPlanEntries(subject: Subject): Promise<AdmissionPlanEntry[]> {
+  if (!supabase) {
+    throw new Error("Supabase 尚未配置。");
+  }
+
+  const { data, error } = await supabase.rpc("admission_plan_entries", {
+    p_plan_year: 2026,
+    p_subject: subject,
+  });
+
+  if (error) throw error;
+  return (data || []) as AdmissionPlanEntry[];
+}
+
+export async function searchAdmissionPlans(filters: AdmissionPlanSearchFilters): Promise<AdmissionPlanRow[]> {
+  if (!supabase) {
+    throw new Error("Supabase 尚未配置。");
+  }
+
+  const { data, error } = await supabase.rpc("search_admission_plans", {
+    p_plan_year: 2026,
+    p_subject: filters.subject,
+    p_batch: filters.batch,
+    p_plan_nature: filters.planNature,
+    p_volunteer_mode: filters.volunteerMode,
+    p_query: filters.keyword.trim(),
+    p_subject_requirement: filters.subjectRequirement,
+    p_school_tag: filters.schoolTag,
+    p_high_level_sports: filters.highLevelSports,
+    p_limit: filters.pageSize,
+    p_offset: (filters.page - 1) * filters.pageSize,
+  });
+
+  if (error) throw error;
+  return (data || []) as AdmissionPlanRow[];
 }
 
 export async function fetchSchoolProfile(schoolQuery: string, subject: Subject): Promise<SchoolProfileRow[]> {

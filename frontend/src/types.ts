@@ -263,6 +263,51 @@ export interface PublicPositionResult {
   militaryCivilian: PublicPositionMatchItem[];
 }
 
+export interface AdmissionPlanEntry {
+  batch: string;
+  plan_nature: string;
+  subject_label: string;
+  volunteer_mode: string;
+  row_count: number;
+  plan_count_total: number;
+}
+
+export interface AdmissionPlanRow {
+  id: number;
+  year: number;
+  subject: Subject;
+  batch: string;
+  plan_nature: string;
+  volunteer_mode: string;
+  school_code: string;
+  school_name: string;
+  school_tags: string[];
+  major_code: string;
+  major_name: string;
+  major_remark: string;
+  qualification_type: string;
+  subject_requirement: string;
+  plan_count: number | null;
+  duration_years: number | null;
+  tuition: number | null;
+  source_page: number | null;
+  source_row: number | null;
+  total_count: number;
+}
+
+export interface AdmissionPlanSearchFilters {
+  subject: Subject;
+  batch: string;
+  planNature: string;
+  volunteerMode: string;
+  subjectRequirement: string;
+  schoolTag: string;
+  highLevelSports: boolean;
+  keyword: string;
+  page: number;
+  pageSize: number;
+}
+
 export interface QueryState {
   year: number;
   subject: Subject;
