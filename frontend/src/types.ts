@@ -1,5 +1,5 @@
 export type Subject = "physics" | "history";
-export type RiskType = "all" | "reach" | "match" | "safe";
+export type RiskType = "all" | "reach" | "match" | "safe" | "unknown";
 
 export interface AppUser {
   id: string;
@@ -48,6 +48,17 @@ export interface Recommendation {
     min_rank: number | null;
   }>;
   total_count: number;
+  plan_id: number;
+  plan_year: number;
+  batch: string;
+  plan_nature: string;
+  volunteer_mode: string;
+  plan_count: number | null;
+  duration_years: number | null;
+  tuition: number | null;
+  subject_requirement: string;
+  major_remark: string;
+  match_confidence: "code_and_name" | "normalized_name" | "school_major_prefix" | "school_major_fuzzy" | "none";
 }
 
 export interface LocationOption {
@@ -261,6 +272,8 @@ export interface QueryState {
   tag: string;
   provinces: string[];
   cities: string[];
+  batches: string[];
+  subjectRequirements: string[];
   page: number;
   pageSize: number;
 }

@@ -77,8 +77,9 @@ export async function fetchRecommendations(query: QueryState, rank: number): Pro
     throw new Error("Supabase 尚未配置。");
   }
 
-  const { data, error } = await supabase.rpc("recommend_admissions", {
-    p_year: query.year,
+  const { data, error } = await supabase.rpc("recommend_admission_plans", {
+    p_plan_year: 2026,
+    p_history_year: query.year,
     p_subject: query.subject,
     p_user_rank: rank,
     p_query: query.keyword.trim(),
@@ -88,6 +89,8 @@ export async function fetchRecommendations(query: QueryState, rank: number): Pro
     p_offset: (query.page - 1) * query.pageSize,
     p_provinces: query.provinces,
     p_cities: query.cities,
+    p_batches: query.batches,
+    p_subject_requirements: query.subjectRequirements,
   });
 
   if (error) throw error;

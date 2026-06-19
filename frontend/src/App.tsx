@@ -22,6 +22,8 @@ const initialQuery: QueryState = {
   tag: "all",
   provinces: [],
   cities: [],
+  batches: ["本科批"],
+  subjectRequirements: [],
   page: 1,
   pageSize: 50,
 };
@@ -35,6 +37,18 @@ const riskLabels: Record<Exclude<RiskType, "all">, string> = {
   reach: "冲",
   match: "稳",
   safe: "保",
+  unknown: "待判定",
+};
+
+const batchOptions = ["本科批", "本科提前批A段", "本科提前批B段", "本科提前批C段", "专科提前批", "专科批"];
+const subjectRequirementOptions = ["不限", "化学", "生物", "思想政治", "地理"];
+
+const matchConfidenceLabels: Record<Recommendation["match_confidence"], string> = {
+  code_and_name: "代码+名称匹配",
+  normalized_name: "名称匹配",
+  school_major_prefix: "专业前缀匹配",
+  school_major_fuzzy: "模糊匹配",
+  none: "暂无历史匹配",
 };
 
 function formatNumber(value: number | null | undefined) {
@@ -80,6 +94,10 @@ function profileTrend(row: SchoolProfileRow) {
   const diff = last - first;
   if (Math.abs(diff) <= 500) return "基本稳定";
   return diff < 0 ? "位次前移" : "位次后移";
+}
+
+function latestHistory(row: Recommendation) {
+  return row.history?.find((item) => item.year === 2025) ?? row.history?.[0] ?? null;
 }
 
 interface ComparedSchool {
@@ -241,7 +259,7 @@ export default function App() {
         acc[item.risk_type] += 1;
         return acc;
       },
-      { reach: 0, match: 0, safe: 0 },
+      { reach: 0, match: 0, safe: 0, unknown: 0 },
     );
   }, [volunteers]);
 
@@ -259,6 +277,7 @@ export default function App() {
     const messages: string[] = [];
 
     if (totalCount < 20) messages.push("当前志愿数量偏少，建议先扩充候选范围，再做排序取舍。");
+    if (stats.unknown > 0) messages.push(`有 ${stats.unknown} 个志愿缺少可比历史位次，适合单独核对招生章程和往年提前批/专科批规则。`);
     if (stats.reach > targetReachMax || reachRatio > 0.32) messages.push(`冲的比例偏高，建议控制在 ${targetReachMin}-${targetReachMax} 个左右。`);
     if (stats.reach < targetReachMin && totalCount >= 20) messages.push(`冲的数量偏少，可补充到 ${targetReachMin}-${targetReachMax} 个，保留适度上探空间。`);
     if (stats.match < targetMatchMin && totalCount >= 20) messages.push(`稳的数量偏少，建议补到 ${targetMatchMin}-${targetMatchMax} 个，作为志愿表主体。`);
@@ -268,7 +287,7 @@ export default function App() {
     }
 
     return messages.length ? messages : ["当前结构暂无明显问题。"];
-  }, [stats.match, stats.reach, stats.safe, volunteers.length]);
+  }, [stats.match, stats.reach, stats.safe, stats.unknown, volunteers.length]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !currentUser) return;
@@ -331,6 +350,22 @@ export default function App() {
 
   function toggleProvince(province: string) {
     updateProvinces(toggleValue(query.provinces, province));
+  }
+
+  function toggleBatch(batch: string) {
+    setQuery((current) => ({
+      ...current,
+      batches: toggleValue(current.batches, batch),
+      page: 1,
+    }));
+  }
+
+  function toggleSubjectRequirement(requirement: string) {
+    setQuery((current) => ({
+      ...current,
+      subjectRequirements: toggleValue(current.subjectRequirements, requirement),
+      page: 1,
+    }));
   }
 
   function submit(event: FormEvent) {
@@ -433,47 +468,61 @@ export default function App() {
     const lines = [
       "河北高考志愿填报参考表",
       `生成时间：${new Date().toLocaleString("zh-CN")}`,
-      `当前查询：${query.year} 年 / ${query.subject === "physics" ? "物理" : "历史"} / ${query.score} 分`,
+      `当前查询：2026 招生计划 / ${query.year} 历史位次口径 / ${query.subject === "physics" ? "物理" : "历史"} / ${query.score} 分`,
       rank ? `当前位次：${formatNumber(rank.cumulative_rank)}` : "",
       "",
-      "序号\t类型\t院校代码\t院校名称\t专业代码\t专业名称\t投档分\t投档位次\t位次差\t所在地",
+      "序号\t类型\t批次\t院校代码\t院校名称\t专业代码\t专业名称\t计划数\t选科要求\t历史投档分\t历史投档位次\t位次差\t所在地",
       ...volunteers.map((item, index) => {
         const location = item.province && item.city ? `${item.province}${item.campus_city ?? item.city}` : "";
+        const latest = latestHistory(item);
         return [
           index + 1,
           riskLabels[item.risk_type],
+          item.batch,
           item.school_code,
           item.school_name,
           item.major_code,
           item.major_name,
-          item.min_score,
-          item.min_rank,
-          item.rank_diff,
+          item.plan_count ?? "",
+          item.subject_requirement,
+          latest?.min_score ?? "",
+          latest?.min_rank ?? "",
+          item.rank_diff ?? "",
           location,
         ].join("\t");
       }),
       "",
-      "说明：推荐结果仅用于历史投档位次参考，最终填报以河北省教育考试院官方系统及高校招生章程为准。",
+      "说明：2026 招生计划为当年可报计划，历史投档位次仅作参考，最终填报以河北省教育考试院官方系统及高校招生章程为准。",
     ].filter(Boolean);
     return lines.join("\n");
   }
 
   function exportCsv() {
-    const header = ["序号", "类型", "院校代码", "院校名称", "专业代码", "专业名称", "投档分", "投档位次", "位次差", "历史年数", "省份", "城市"];
-    const body = volunteers.map((item, index) => [
-      index + 1,
-      riskLabels[item.risk_type],
-      item.school_code,
-      item.school_name,
-      item.major_code,
-      item.major_name,
-      item.min_score,
-      item.min_rank,
-      item.rank_diff,
-      item.history_years,
-      item.province ?? "",
-      item.campus_city ?? item.city ?? "",
-    ]);
+    const header = ["序号", "类型", "批次", "院校代码", "院校名称", "专业代码", "专业名称", "计划数", "选科要求", "学制", "学费", "历史投档分", "历史投档位次", "位次差", "历史年数", "匹配方式", "省份", "城市", "专业备注"];
+    const body = volunteers.map((item, index) => {
+      const latest = latestHistory(item);
+      return [
+        index + 1,
+        riskLabels[item.risk_type],
+        item.batch,
+        item.school_code,
+        item.school_name,
+        item.major_code,
+        item.major_name,
+        item.plan_count ?? "",
+        item.subject_requirement,
+        item.duration_years ?? "",
+        item.tuition ?? "",
+        latest?.min_score ?? "",
+        latest?.min_rank ?? "",
+        item.rank_diff ?? "",
+        item.history_years,
+        matchConfidenceLabels[item.match_confidence],
+        item.province ?? "",
+        item.campus_city ?? item.city ?? "",
+        item.major_remark,
+      ];
+    });
     const csv = [header, ...body].map((row) => row.map(csvEscape).join(",")).join("\r\n");
     const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -497,15 +546,19 @@ export default function App() {
     const rowsHtml = volunteers
       .map((item, index) => {
         const location = item.province && item.city ? `${item.province} ${item.campus_city ?? item.city}` : "-";
+        const latest = latestHistory(item);
         return `
           <tr>
             <td>${index + 1}</td>
             <td>${riskLabels[item.risk_type]}</td>
+            <td>${item.batch}</td>
             <td>${item.school_name}</td>
             <td>${item.major_code} ${item.major_name}</td>
-            <td>${item.min_score ?? "-"}</td>
-            <td>${formatNumber(item.min_rank)}</td>
-            <td>${item.rank_diff > 0 ? "+" : ""}${formatNumber(item.rank_diff)}</td>
+            <td>${item.plan_count ?? "-"}</td>
+            <td>${item.subject_requirement || "-"}</td>
+            <td>${latest?.min_score ?? "-"}</td>
+            <td>${formatNumber(latest?.min_rank)}</td>
+            <td>${item.rank_diff && item.rank_diff > 0 ? "+" : ""}${formatNumber(item.rank_diff)}</td>
             <td>${location}</td>
           </tr>
         `;
@@ -557,7 +610,7 @@ export default function App() {
             <div><span>冲</span><b>${stats.reach}</b></div>
             <div><span>稳</span><b>${stats.match}</b></div>
             <div><span>保</span><b>${stats.safe}</b></div>
-            <div><span>年份口径</span><b>${query.year}</b></div>
+            <div><span>年份口径</span><b>2026 / ${query.year}</b></div>
           </div>
 
           <h2>结构分析</h2>
@@ -569,16 +622,19 @@ export default function App() {
               <tr>
                 <th>序号</th>
                 <th>类型</th>
+                <th>批次</th>
                 <th>院校</th>
                 <th>专业</th>
-                <th>投档分</th>
-                <th>投档位次</th>
+                <th>计划</th>
+                <th>选科</th>
+                <th>历史分</th>
+                <th>历史位次</th>
                 <th>位次差</th>
                 <th>所在地</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHtml || '<tr><td colspan="8">尚未加入志愿。</td></tr>'}
+              ${rowsHtml || '<tr><td colspan="10">尚未加入志愿。</td></tr>'}
             </tbody>
           </table>
 
@@ -673,7 +729,7 @@ export default function App() {
               <div>
                 <span className={riskClass(item.risk_type)}>{riskLabels[item.risk_type]}</span>
                 <strong>{item.school_name}</strong>
-                <p>{item.major_code} {item.major_name}</p>
+                <p>{item.batch} / {item.major_code} {item.major_name} / {item.plan_count ?? "-"} 人</p>
               </div>
               <div className="volunteer-item-actions">
                 <button disabled={index === 0} onClick={() => moveVolunteer(index, -1)} type="button">↑</button>
@@ -719,7 +775,7 @@ export default function App() {
         <section className="notice">
           <strong>需要配置 Supabase：</strong>
           复制 <code>frontend/.env.example</code> 为 <code>frontend/.env.local</code>，填写项目 URL 和 anon key。
-          然后执行 <code>supabase/migrations/001_init_gaokao.sql</code> 与导入脚本。
+          然后执行数据库迁移和导入脚本。
         </section>
       )}
 
@@ -732,7 +788,7 @@ export default function App() {
 
           <form onSubmit={submit} className="form-grid">
             <label>
-              年份
+              历史位次口径
               <select value={query.year} onChange={(event) => updateQuery({ year: Number(event.target.value) })}>
                 <option value={2025}>2025</option>
                 <option value={2024}>2024</option>
@@ -744,7 +800,7 @@ export default function App() {
               科目组合
               <select value={query.subject} onChange={(event) => updateQuery({ subject: event.target.value as Subject })}>
                 <option value="physics">物理</option>
-                <option value="history">历史</option>
+                <option value="history" disabled>历史（待导入）</option>
               </select>
             </label>
 
@@ -789,6 +845,7 @@ export default function App() {
                   <option value="reach">冲</option>
                   <option value="match">稳</option>
                   <option value="safe">保</option>
+                  <option value="unknown">待判定</option>
                 </select>
               </label>
               <label>
@@ -801,6 +858,48 @@ export default function App() {
                   <option value="普通本科">普通本科</option>
                 </select>
               </label>
+
+              <div className="multi-filter">
+                <div className="filter-head">
+                  <span>2026 招生批次</span>
+                  <button type="button" className="link-button" onClick={() => updateQuery({ batches: [], page: 1 })}>
+                    全部
+                  </button>
+                </div>
+                <div className="check-grid province-grid">
+                  {batchOptions.map((batch) => (
+                    <label key={batch} className="check-item">
+                      <input
+                        type="checkbox"
+                        checked={query.batches.includes(batch)}
+                        onChange={() => toggleBatch(batch)}
+                      />
+                      {batch}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="multi-filter">
+                <div className="filter-head">
+                  <span>再选科目要求</span>
+                  <button type="button" className="link-button" onClick={() => updateQuery({ subjectRequirements: [], page: 1 })}>
+                    全部
+                  </button>
+                </div>
+                <div className="check-grid province-grid">
+                  {subjectRequirementOptions.map((requirement) => (
+                    <label key={requirement} className="check-item">
+                      <input
+                        type="checkbox"
+                        checked={query.subjectRequirements.includes(requirement)}
+                        onChange={() => toggleSubjectRequirement(requirement)}
+                      />
+                      {requirement}
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               <div className="multi-filter">
                 <div className="filter-head">
@@ -926,13 +1025,13 @@ export default function App() {
               {error && <div className="error">{error}</div>}
               <div className="recommendation-cards">
                 {rows.map((row) => {
-                  const latest = row.history?.find((history) => history.year === 2025);
+                  const latest = latestHistory(row);
                   const location = row.province && row.city ? `${row.province} ${row.campus_city ?? row.city}` : "-";
                   return (
                     <article className="recommendation-card" key={row.id}>
                       <div className="recommendation-card-head">
                         <span className={riskClass(row.risk_type)}>{riskLabels[row.risk_type]}</span>
-                        <span>{row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)} 位次差</span>
+                        <span>{row.rank_diff && row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)} 位次差</span>
                       </div>
                       <button className="recommendation-school" type="button" onClick={() => setSelectedDetail(row)}>
                         {row.school_name}
@@ -945,10 +1044,11 @@ export default function App() {
                         {row.major_code} {row.major_name}
                       </button>
                       <div className="recommendation-meta">
-                        <div><span>2025</span><b>{latest ? `${latest.min_score} 分` : "-"}</b><em>{latest ? `${formatNumber(latest.min_rank)} 位` : ""}</em></div>
+                        <div><span>{row.batch}</span><b>{row.plan_count ?? "-"} 人</b><em>{row.subject_requirement || "选科不限"}</em></div>
+                        <div><span>历史</span><b>{latest ? `${latest.min_score} 分` : "-"}</b><em>{latest ? `${formatNumber(latest.min_rank)} 位` : matchConfidenceLabels[row.match_confidence]}</em></div>
                         <div><span>所在地</span><b>{location}</b></div>
-                        <div><span>历史</span><b>{row.history_years} 年</b></div>
                       </div>
+                      {row.major_remark && <p className="muted">{row.major_remark}</p>}
                       <div className="recommendation-actions">
                         <button type="button" onClick={() => addVolunteer(row)}>加入志愿</button>
                         <button className="secondary-button" type="button" onClick={() => setSelectedDetail(row)}>详情</button>
@@ -965,6 +1065,7 @@ export default function App() {
                     <tr>
                       <th>类型</th>
                       <th>学校 / 专业</th>
+                      <th>2026 计划</th>
                       <th>2025</th>
                       <th>2024</th>
                       <th>2023</th>
@@ -1000,6 +1101,12 @@ export default function App() {
                               {row.major_name}
                             </button>
                           </p>
+                          {row.major_remark && <p className="muted">{row.major_remark}</p>}
+                        </td>
+                        <td className="year-cell">
+                          <b>{row.batch}</b>
+                          <span>{row.plan_count ?? "-"} 人 / {row.subject_requirement || "不限"}</span>
+                          <span>{row.duration_years ? `${row.duration_years} 年` : "-"} / {row.tuition ? `${formatNumber(row.tuition)} 元/年` : "-"}</span>
                         </td>
                         {[2025, 2024, 2023].map((year) => {
                           const item = row.history?.find((history) => history.year === year);
@@ -1015,8 +1122,8 @@ export default function App() {
                           );
                         })}
                         <td>{row.province && row.city ? `${row.province} ${row.campus_city ?? row.city}` : "-"}</td>
-                        <td>{row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)}</td>
-                        <td>{row.history_years} 年</td>
+                        <td>{row.rank_diff && row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)}</td>
+                        <td>{row.history_years ? `${row.history_years} 年` : matchConfidenceLabels[row.match_confidence]}</td>
                         <td className="row-actions">
                           <button className="small" onClick={() => setSelectedDetail(row)} type="button">详情</button>
                           <button className="small" onClick={() => addVolunteer(row)} type="button">加入</button>
@@ -1025,7 +1132,7 @@ export default function App() {
                     ))}
                     {!rows.length && !loading && (
                       <tr>
-                        <td colSpan={9} className="empty">暂无结果。</td>
+                        <td colSpan={10} className="empty">暂无结果。</td>
                       </tr>
                     )}
                   </tbody>
@@ -1323,9 +1430,22 @@ export default function App() {
             <div className="detail-grid">
               <div><span>院校代码</span><b>{selectedDetail.school_code}</b></div>
               <div><span>所在地</span><b>{selectedDetail.province && selectedDetail.city ? `${selectedDetail.province} ${selectedDetail.campus_city ?? selectedDetail.city}` : "-"}</b></div>
-              <div><span>位次差</span><b>{selectedDetail.rank_diff > 0 ? "+" : ""}{formatNumber(selectedDetail.rank_diff)}</b></div>
-              <div><span>历史年数</span><b>{selectedDetail.history_years} 年</b></div>
+              <div><span>位次差</span><b>{selectedDetail.rank_diff && selectedDetail.rank_diff > 0 ? "+" : ""}{formatNumber(selectedDetail.rank_diff)}</b></div>
+              <div><span>历史匹配</span><b>{selectedDetail.history_years ? `${selectedDetail.history_years} 年` : matchConfidenceLabels[selectedDetail.match_confidence]}</b></div>
             </div>
+
+            <section className="drawer-section">
+              <h3>2026 招生计划</h3>
+              <div className="detail-grid">
+                <div><span>批次</span><b>{selectedDetail.batch}</b></div>
+                <div><span>计划数</span><b>{selectedDetail.plan_count ?? "-"} 人</b></div>
+                <div><span>再选科目</span><b>{selectedDetail.subject_requirement || "不限"}</b></div>
+                <div><span>志愿模式</span><b>{selectedDetail.volunteer_mode || "-"}</b></div>
+                <div><span>学制</span><b>{selectedDetail.duration_years ? `${selectedDetail.duration_years} 年` : "-"}</b></div>
+                <div><span>学费</span><b>{selectedDetail.tuition ? `${formatNumber(selectedDetail.tuition)} 元/年` : "-"}</b></div>
+              </div>
+              {selectedDetail.major_remark && <p className="drawer-note">{selectedDetail.major_remark}</p>}
+            </section>
 
             <section className="drawer-section">
               <h3>近三年投档趋势</h3>
@@ -1340,13 +1460,15 @@ export default function App() {
                   );
                 })}
               </div>
-              <p className="drawer-note">{historyTrend(selectedDetail)}</p>
+              <p className="drawer-note">
+                {historyTrend(selectedDetail)} 历史匹配方式：{matchConfidenceLabels[selectedDetail.match_confidence]}。
+              </p>
             </section>
 
             <section className="drawer-section">
               <h3>参考口径</h3>
-              <p>当前推荐按历史投档位次粗分为冲、稳、保，不预测当年最终录取结果。</p>
-              <p>同一院校不同校区按实际就读城市标注，威海校区对应威海市。</p>
+              <p>当前推荐以 2026 招生计划为主，历史投档位次只用于粗分冲、稳、保，不预测当年最终录取结果。</p>
+              <p>提前批、专科批、专项计划、体检或性别限制专业需要单独核对招生章程和官方填报系统。</p>
             </section>
 
             <div className="drawer-actions">
@@ -1412,13 +1534,13 @@ export default function App() {
             </div>
             <section className="drawer-section">
               <h3>数据底座</h3>
-              <p>投档数据来自 2023-2025 年河北本科批平行志愿投档统计表，位次数据来自对应年份一分一档表。</p>
-              <p>清洗脚本输出 `rank_2023/2024/2025` 和 `admission_2023/2024/2025`，并生成行数、空值、重复、异常分数、异常位次、物理/历史数量校验报告。</p>
+              <p>推荐主表来自 2026 年河北物理组招生计划，覆盖本科批、本科提前批 A/B/C 段、专科提前批和专科批。</p>
+              <p>历史投档数据来自 2023-2025 年河北本科批平行志愿投档统计表，位次数据来自对应年份一分一档表。</p>
             </section>
             <section className="drawer-section">
               <h3>推荐逻辑</h3>
-              <p>先用分数换算当年位次，再用同科目历史投档位次计算位次差，并按阈值划分冲、稳、保。</p>
-              <p>推荐结果只基于历史投档位次，不包含招生计划变化、选科限制变化、专业组调整、考生偏好变化等因素。</p>
+              <p>先用分数换算历史口径位次，再把 2026 计划按院校和专业规范名关联三年投档位次，计算位次差并划分冲、稳、保。</p>
+              <p>无历史匹配、提前批特殊规则、专科批或计划数为 0 的记录会保留在结果中，并标记为待判定。</p>
             </section>
             <section className="drawer-section">
               <h3>使用边界</h3>

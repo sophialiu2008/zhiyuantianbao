@@ -34,6 +34,33 @@ $env:SUPABASE_DB_URL="postgresql://..."
 python scripts\supabase_import\import_cleaned_data.py --data data\cleaned --truncate
 ```
 
+## 导入 2026 河北物理组招生计划
+
+2026 招生计划不写入历史投档表 `admission_records`，而是写入独立表 `admission_plans`，再通过规范化院校名和专业名关联 2023-2025 历史投档、院校画像和专业数据。
+
+1. 在 Supabase 执行新增迁移：
+
+```text
+supabase/migrations/028_admission_plans_2026.sql
+```
+
+2. 清洗 crawler 输出：
+
+```powershell
+& 'C:\Users\liuli\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' scripts\data_cleaning\clean_admission_plan_2026.py `
+  --input 'C:\Users\liuli\Desktop\招生计划\hebei_admission_crawler\output' `
+  --output data\cleaned\admission_plan
+```
+
+3. 导入 Supabase：
+
+```powershell
+$env:SUPABASE_DB_URL="postgresql://..."
+python scripts\supabase_import\import_admission_plans.py `
+  --data data\cleaned\admission_plan\admission_plan_2026_physics.json `
+  --replace-year
+```
+
 4. 配置前端：
 
 ```powershell
