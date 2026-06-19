@@ -301,7 +301,8 @@ code {
 
 .layout.plan-layout {
   grid-template-columns: minmax(0, 1fr);
-  max-width: 1248px;
+  width: min(100% - 16px, 1600px);
+  max-width: 1600px;
   margin: 0 auto;
   padding: 8px;
 }
@@ -959,7 +960,7 @@ th {
 
 .legacy-input-school,
 .legacy-input-major {
-  width: 238px;
+  width: 300px;
 }
 
 .legacy-text-input::placeholder {
@@ -1014,7 +1015,7 @@ th {
 }
 
 .plan-table table {
-  min-width: 1180px;
+  min-width: 1420px;
   border-collapse: collapse;
 }
 
@@ -1045,11 +1046,11 @@ th {
 }
 
 .legacy-plan-table .ellipsis-cell {
-  max-width: 142px;
+  max-width: 230px;
 }
 
 .legacy-plan-table .remark-cell {
-  max-width: 150px;
+  max-width: 260px;
 }
 
 .legacy-plan-table th:nth-child(1),
