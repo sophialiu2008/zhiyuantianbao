@@ -1275,6 +1275,237 @@ th {
   padding: 7px 8px;
 }
 
+.recommendation-layout {
+  display: block;
+  width: 100%;
+  max-width: none;
+}
+
+.recommendation-layout .query-panel {
+  display: none;
+}
+
+.recommendation-layout .results-panel {
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #edf2f8;
+  box-shadow: none;
+}
+
+.recommendation-layout .view-tabs {
+  margin: 0;
+  padding: 10px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #dce4ef;
+}
+
+.admission-workbench {
+  display: grid;
+  gap: 10px;
+  background: #edf2f8;
+}
+
+.admission-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 28px;
+  color: #ffffff;
+  background: linear-gradient(110deg, #173b63, #4777c8);
+}
+
+.admission-hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(24px, 2.2vw, 34px);
+  letter-spacing: 0;
+}
+
+.admission-hero p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+}
+
+.admission-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 6px 12px 0;
+}
+
+.admission-kpis div {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(23, 54, 93, 0.08);
+}
+
+.admission-kpis b {
+  display: block;
+  color: #173b63;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.admission-kpis span {
+  display: block;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.admission-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(23, 54, 93, 0.08);
+}
+
+.admission-filter-grid input,
+.admission-filter-grid select,
+.admission-filter-grid button {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.admission-filter-grid button {
+  border: 0;
+  background: #4472c4;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.admission-filter-grid .secondary-button {
+  border: 0;
+  color: #173b63;
+  background: #e8eef7;
+}
+
+.selectionbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(23, 54, 93, 0.08);
+}
+
+.selectionbar .summary {
+  margin-right: auto;
+  color: #667085;
+}
+
+.selectionbar .summary strong {
+  color: #173b63;
+  font-size: 18px;
+}
+
+.selectionbar button {
+  width: auto;
+  min-height: 36px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: #4472c4;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.selectionbar button.secondary {
+  color: #173b63;
+  background: #e8eef7;
+}
+
+.selectionbar button.danger {
+  color: #a33b24;
+  background: #fff0ed;
+  border: 1px solid #f2c8bf;
+}
+
+.recommendation-countbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.admission-wide-table {
+  max-height: 72vh;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: 0 -1px 0 #dce4ef;
+}
+
+.admission-wide-table table {
+  min-width: 1420px;
+  font-size: 13px;
+}
+
+.admission-wide-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 10px 8px;
+  background: #173b63;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.admission-wide-table td {
+  padding: 10px 8px;
+  vertical-align: top;
+}
+
+.admission-wide-table tr.selected-row td {
+  background: #e7f0fc;
+}
+
+.admission-wide-table .select-col {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+}
+
+.admission-wide-table .select-col input {
+  width: 18px;
+  height: 18px;
+  accent-color: #4472c4;
+}
+
+.admission-wide-table .school-major small {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+  line-height: 1.35;
+}
+
+.admission-wide-table .remark-cell {
+  max-width: 320px;
+  color: #344054;
+  line-height: 1.45;
+}
+
+.admission-wide-table .year-cell {
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .volunteer-page {
   display: grid;
 }

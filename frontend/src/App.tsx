@@ -588,6 +588,26 @@ export default function App() {
     setVolunteers((current) => [...current, row]);
   }
 
+  function isVolunteerSelected(id: number) {
+    return volunteers.some((item) => item.id === id);
+  }
+
+  function toggleVolunteer(row: Recommendation, checked: boolean) {
+    if (checked) {
+      addVolunteer(row);
+    } else {
+      removeVolunteer(row.id);
+    }
+  }
+
+  function addCurrentPageVolunteers() {
+    setVolunteers((current) => {
+      const existing = new Set(current.map((item) => item.id));
+      const additions = rows.filter((row) => !existing.has(row.id)).slice(0, Math.max(0, 96 - current.length));
+      return [...current, ...additions];
+    });
+  }
+
   function removeVolunteer(id: number) {
     setVolunteers((current) => current.filter((item) => item.id !== id));
   }
@@ -925,7 +945,7 @@ export default function App() {
         </section>
       )}
 
-      <main className={activeView === "plans" ? "layout plan-layout" : "layout"}>
+      <main className={activeView === "plans" ? "layout plan-layout" : activeView === "recommendations" ? "layout recommendation-layout" : "layout"}>
         {activeView !== "plans" && (
         <section className="panel query-panel">
           <div className="panel-title">
@@ -1185,72 +1205,135 @@ export default function App() {
           </div>
 
           {activeView === "recommendations" ? (
-            <>
-              <div className="panel-title">
-                <h2>推荐结果</h2>
-                <span className="muted">
-                  {total ? `第 ${query.page} / ${totalPages} 页，共 ${formatNumber(total)} 条` : "暂无结果"}
-                </span>
+            <div className="admission-workbench">
+              <div className="admission-hero">
+                <div>
+                  <h2>2026河北物理组招生计划近三年录取查询</h2>
+                  <p>2023-2025最低位次匹配 · 院校地区/标签筛选 · 勾选后导出 · 实时数据库查询</p>
+                </div>
+                <button className="secondary-button" type="button" onClick={() => setShowDataNote(true)}>
+                  数据说明
+                </button>
               </div>
+
+              <div className="admission-kpis">
+                <div><b>{formatNumber(20849)}</b><span>2026招生计划</span></div>
+                <div><b>{formatNumber(15573)}</b><span>至少一年精确匹配</span></div>
+                <div><b>{formatNumber(10067)}</b><span>三年精确匹配</span></div>
+                <div><b>{formatNumber(5276)}</b><span>新增专业</span></div>
+                <div><b>{formatNumber(total || 0)}</b><span>当前筛选结果</span></div>
+                <div><b>{formatNumber(volunteers.length)}</b><span>已勾选</span></div>
+              </div>
+
               {error && <div className="error">{error}</div>}
-              <div className="recommendation-cards">
-                {rows.map((row) => {
-                  const latest = latestHistory(row);
-                  const location = row.province && row.city ? `${row.province} ${row.campus_city ?? row.city}` : "-";
-                  return (
-                    <article className="recommendation-card" key={row.id}>
-                      <div className="recommendation-card-head">
-                        <span className={riskClass(row.risk_type)}>{riskLabels[row.risk_type]}</span>
-                        {row.is_new_major && <span className="tag highlight">新增专业</span>}
-                        <span>{row.rank_diff && row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)} 位次差</span>
-                      </div>
-                      <button className="recommendation-school" type="button" onClick={() => setSelectedDetail(row)}>
-                        {row.school_name}
-                      </button>
-                      <button
-                        className="recommendation-major"
-                        type="button"
-                        onClick={() => setSelectedMajorProfile({ schoolName: row.school_name, majorName: row.major_name })}
-                      >
-                        {row.major_code} {row.major_name}
-                      </button>
-                      <div className="recommendation-meta">
-                        <div><span>{row.batch}</span><b>{row.plan_count ?? "-"} 人</b><em>{row.subject_requirement || "选科不限"}</em></div>
-                        <div><span>历史</span><b>{latest ? `${latest.min_score} 分` : "-"}</b><em>{latest ? `${formatNumber(latest.min_rank)} 位` : matchConfidenceLabels[row.match_confidence]}</em></div>
-                        <div><span>所在地</span><b>{location}</b></div>
-                      </div>
-                      {row.major_remark && <p className="muted">{row.major_remark}</p>}
-                      <div className="recommendation-actions">
-                        <button type="button" onClick={() => addVolunteer(row)}>加入志愿</button>
-                        <button className="secondary-button" type="button" onClick={() => setSelectedDetail(row)}>详情</button>
-                        <button className="secondary-button" type="button" onClick={() => setSelectedSchoolProfile(row.school_name)}>院校</button>
-                      </div>
-                    </article>
-                  );
-                })}
-                {!rows.length && !loading && <div className="empty">暂无结果。</div>}
+
+              <form className="admission-filter-grid" onSubmit={submit}>
+                <input
+                  value={query.keyword}
+                  onChange={(event) => updateQuery({ keyword: event.target.value, page: 1 })}
+                  placeholder="搜索院校/专业"
+                />
+                <select value={query.year} onChange={(event) => updateQuery({ year: Number(event.target.value), page: 1 })}>
+                  <option value={2025}>2025位次口径</option>
+                  <option value={2024}>2024位次口径</option>
+                  <option value={2023}>2023位次口径</option>
+                </select>
+                <input
+                  type="number"
+                  min={140}
+                  max={750}
+                  value={query.score}
+                  onChange={(event) => updateQuery({ score: Number(event.target.value), page: 1 })}
+                  placeholder="高考分数"
+                />
+                <select value={query.risk} onChange={(event) => updateQuery({ risk: event.target.value as RiskType, page: 1 })}>
+                  <option value="all">全部系统结论</option>
+                  <option value="reach">冲</option>
+                  <option value="match">稳</option>
+                  <option value="safe">保</option>
+                  <option value="unknown">待判定</option>
+                </select>
+                <select value={query.tag} onChange={(event) => updateQuery({ tag: event.target.value, page: 1 })}>
+                  <option value="all">全部院校标签</option>
+                  <option value="985">985</option>
+                  <option value="211">211</option>
+                  <option value="双一流">双一流</option>
+                  <option value="普通本科">普通本科</option>
+                </select>
+                <select
+                  value={query.batches[0] ?? ""}
+                  onChange={(event) => updateQuery({ batches: event.target.value ? [event.target.value] : [], page: 1 })}
+                >
+                  <option value="">全部批次</option>
+                  {batchOptions.map((batch) => <option key={batch} value={batch}>{batch}</option>)}
+                </select>
+                <select
+                  value={query.subjectRequirements[0] ?? ""}
+                  onChange={(event) => updateQuery({ subjectRequirements: event.target.value ? [event.target.value] : [], page: 1 })}
+                >
+                  <option value="">全部再选科目</option>
+                  {subjectRequirementOptions.map((requirement) => <option key={requirement} value={requirement}>{requirement}</option>)}
+                </select>
+                <button className="secondary-button" type="button" onClick={() => setQuery({ ...initialQuery })}>
+                  重置筛选
+                </button>
+                <button type="submit" disabled={loading || !isSupabaseConfigured}>
+                  {loading ? "查询中" : "查询"}
+                </button>
+                <button type="button" onClick={exportCsv} disabled={!volunteers.length}>
+                  导出已勾选CSV
+                </button>
+              </form>
+
+              <div className="selectionbar">
+                <div className="summary">已勾选 <strong>{volunteers.length}</strong> 条</div>
+                <button type="button" className="secondary" onClick={addCurrentPageVolunteers} disabled={!rows.length || volunteers.length >= 96}>
+                  勾选当前页
+                </button>
+                <button type="button" className="secondary" onClick={() => setActiveView("volunteers")}>
+                  只看已勾选
+                </button>
+                <button type="button" className="danger" onClick={clearVolunteers} disabled={!volunteers.length}>
+                  清空勾选
+                </button>
               </div>
-              <div className="table-wrap recommendation-table">
+
+              <div className="recommendation-countbar">
+                <span>筛选结果 {formatNumber(total || 0)} 条，第 {query.page}/{totalPages} 页</span>
+                <span>点击院校/专业查看详情；复选框用于建立备选清单</span>
+              </div>
+
+              <div className="table-wrap recommendation-table admission-wide-table">
                 <table>
                   <thead>
                     <tr>
-                      <th>类型</th>
-                      <th>学校 / 专业</th>
-                      <th>2026 计划</th>
-                      <th>2025</th>
-                      <th>2024</th>
-                      <th>2023</th>
-                      <th>所在地</th>
-                      <th>位次差</th>
-                      <th>历史</th>
-                      <th>操作</th>
+                      <th className="select-col">选</th>
+                      <th>院校</th>
+                      <th>专业</th>
+                      <th>备注</th>
+                      <th>再选科目</th>
+                      <th>计划数</th>
+                      <th>学费</th>
+                      <th>2023位次</th>
+                      <th>2024位次</th>
+                      <th>2025位次</th>
+                      <th>趋势</th>
+                      <th>系统结论</th>
+                      <th>置信度</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.id}>
-                        <td>
-                          <span className={riskClass(row.risk_type)}>{riskLabels[row.risk_type]}</span>
+                    {rows.map((row) => {
+                      const selected = isVolunteerSelected(row.id);
+                      return (
+                      <tr key={row.id} className={selected ? "selected-row" : ""}>
+                        <td className="select-col">
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(event) => toggleVolunteer(row, event.target.checked)}
+                            aria-label={`勾选${row.school_name}${row.major_name}`}
+                          />
                         </td>
                         <td className="school-major">
                           <button className="text-link" type="button" onClick={() => setSelectedDetail(row)}>
@@ -1263,6 +1346,9 @@ export default function App() {
                             <span key={tag} className="tag">{tag}</span>
                           ))}
                           {row.is_new_major && <span className="tag highlight">新增专业</span>}
+                          <small>{[row.province, row.campus_city ?? row.city].filter(Boolean).join(" · ") || "所在地未匹配"} · 院校代码 {row.school_code}</small>
+                        </td>
+                        <td className="school-major">
                           <p>
                             {row.major_code}{" "}
                             <button
@@ -1273,38 +1359,33 @@ export default function App() {
                               {row.major_name}
                             </button>
                           </p>
-                          {row.major_remark && <p className="muted">{row.major_remark}</p>}
+                          <small>{row.major_code}</small>
                         </td>
-                        <td className="year-cell">
-                          <b>{row.batch}</b>
-                          <span>{row.plan_count ?? "-"} 人 / {row.subject_requirement || "不限"}</span>
-                          <span>{row.duration_years ? `${row.duration_years} 年` : "-"} / {row.tuition ? `${formatNumber(row.tuition)} 元/年` : "-"}</span>
-                        </td>
-                        {[2025, 2024, 2023].map((year) => {
+                        <td className="remark-cell">{row.major_remark || "-"}</td>
+                        <td>{row.subject_requirement || "不限"}</td>
+                        <td>{row.plan_count ?? "-"}</td>
+                        <td>{row.tuition ? formatNumber(row.tuition) : "-"}</td>
+                        {[2023, 2024, 2025].map((year) => {
                           const item = row.history?.find((history) => history.year === year);
                           return (
                             <td key={year} className="year-cell">
                               {item ? (
                                 <>
-                                  <b>{item.min_score} 分</b>
                                   <span>{formatNumber(item.min_rank)} 位</span>
                                 </>
                               ) : "-"}
                             </td>
                           );
                         })}
-                        <td>{row.province && row.city ? `${row.province} ${row.campus_city ?? row.city}` : "-"}</td>
-                        <td>{row.rank_diff && row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)}</td>
-                        <td>{row.history_years ? `${row.history_years} 年` : matchConfidenceLabels[row.match_confidence]}{row.history_match_note ? ` / ${row.history_match_note}` : ""}</td>
-                        <td className="row-actions">
-                          <button className="small" onClick={() => setSelectedDetail(row)} type="button">详情</button>
-                          <button className="small" onClick={() => addVolunteer(row)} type="button">加入</button>
-                        </td>
+                        <td>{historyTrend(row)}</td>
+                        <td><span className={riskClass(row.risk_type)}>{riskLabels[row.risk_type]}</span></td>
+                        <td>{row.history_years ? `${row.history_years}年` : matchConfidenceLabels[row.match_confidence]}</td>
                       </tr>
-                    ))}
+                    );
+                    })}
                     {!rows.length && !loading && (
                       <tr>
-                        <td colSpan={10} className="empty">暂无结果。</td>
+                        <td colSpan={13} className="empty">暂无结果。</td>
                       </tr>
                     )}
                   </tbody>
@@ -1314,7 +1395,7 @@ export default function App() {
                 <button disabled={query.page <= 1 || loading} onClick={() => changePage(-1)} type="button">上一页</button>
                 <button disabled={query.page >= totalPages || loading || total === 0} onClick={() => changePage(1)} type="button">下一页</button>
               </div>
-            </>
+            </div>
           ) : activeView === "plans" ? (
             <div className="plan-query-page legacy-plan-page">
               <div className="panel-title">
