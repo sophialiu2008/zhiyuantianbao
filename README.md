@@ -42,6 +42,7 @@ python scripts\supabase_import\import_cleaned_data.py --data data\cleaned --trun
 
 ```text
 supabase/migrations/028_admission_plans_2026.sql
+supabase/migrations/033_admission_plan_history_matches.sql
 ```
 
 2. 清洗 crawler 输出：
@@ -61,7 +62,26 @@ python scripts\supabase_import\import_admission_plans.py `
   --replace-year
 ```
 
-4. 配置前端：
+4. 如需只更新本科批物理组，清洗含历年位次的 Excel，并只替换 `本科批`：
+
+```powershell
+& 'C:\Users\liuli\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' scripts\data_cleaning\clean_admission_plan_rank_xlsx.py `
+  --input 'C:\Users\liuli\Desktop\26年本科批物理组_招生计划_含历年位次.xlsx' `
+  --output data\cleaned\admission_plan
+
+$env:SUPABASE_DB_URL="postgresql://..."
+python scripts\supabase_import\import_admission_plans.py `
+  --data data\cleaned\admission_plan\admission_plan_2026_physics_benke.json `
+  --replace-batch '本科批'
+
+python scripts\supabase_import\import_admission_plan_history_matches.py `
+  --data data\cleaned\admission_plan\admission_plan_history_matches_2026_physics_benke.json `
+  --replace-batch
+```
+
+该 Excel 路线会额外写入 `admission_plan_history_matches`，推荐 RPC 会优先使用其中的 2023-2025 预计算位次和 `新增专业` 标记；没有快照的计划仍回退到历史投档表动态匹配。
+
+5. 配置前端：
 
 ```powershell
 cd frontend

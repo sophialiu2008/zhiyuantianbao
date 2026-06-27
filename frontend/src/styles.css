@@ -723,6 +723,11 @@ th {
   background: #eef2f6;
 }
 
+.tag.highlight {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
 .risk.reach {
   color: #92400e;
   background: #fef3c7;

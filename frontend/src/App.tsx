@@ -75,6 +75,7 @@ const planSubjectRequirementOptions = ["化学", "生物", "化学和生物", "�
 const schoolTagOptions = ["公办", "民办", "独立学院", "中外合作办学", "内地与港澳台地区合作办学"];
 
 const matchConfidenceLabels: Record<Recommendation["match_confidence"], string> = {
+  precomputed_xlsx: "计划表预计算",
   code_and_name: "代码+名称匹配",
   normalized_name: "名称匹配",
   school_major_prefix: "专业前缀匹配",
@@ -604,7 +605,7 @@ export default function App() {
       `当前查询：2026 招生计划 / ${query.year} 历史位次口径 / ${query.subject === "physics" ? "物理" : "历史"} / ${query.score} 分`,
       rank ? `当前位次：${formatNumber(rank.cumulative_rank)}` : "",
       "",
-      "序号\t类型\t批次\t院校代码\t院校名称\t专业代码\t专业名称\t计划数\t选科要求\t历史投档分\t历史投档位次\t位次差\t所在地",
+      "序号\t类型\t批次\t院校代码\t院校名称\t专业代码\t专业名称\t计划数\t选科要求\t历史投档分\t历史投档位次\t位次差\t所在地\t计划标记",
       ...volunteers.map((item, index) => {
         const location = item.province && item.city ? `${item.province}${item.campus_city ?? item.city}` : "";
         const latest = latestHistory(item);
@@ -622,6 +623,7 @@ export default function App() {
           latest?.min_rank ?? "",
           item.rank_diff ?? "",
           location,
+          item.is_new_major ? "新增专业" : item.history_match_note,
         ].join("\t");
       }),
       "",
@@ -631,7 +633,7 @@ export default function App() {
   }
 
   function exportCsv() {
-    const header = ["序号", "类型", "批次", "院校代码", "院校名称", "专业代码", "专业名称", "计划数", "选科要求", "学制", "学费", "历史投档分", "历史投档位次", "位次差", "历史年数", "匹配方式", "省份", "城市", "专业备注"];
+    const header = ["序号", "类型", "批次", "院校代码", "院校名称", "专业代码", "专业名称", "计划数", "选科要求", "学制", "学费", "历史投档分", "历史投档位次", "位次差", "历史年数", "匹配方式", "计划标记", "省份", "城市", "专业备注"];
     const body = volunteers.map((item, index) => {
       const latest = latestHistory(item);
       return [
@@ -651,6 +653,7 @@ export default function App() {
         item.rank_diff ?? "",
         item.history_years,
         matchConfidenceLabels[item.match_confidence],
+        item.is_new_major ? "新增专业" : item.history_match_note,
         item.province ?? "",
         item.campus_city ?? item.city ?? "",
         item.major_remark,
@@ -1188,6 +1191,7 @@ export default function App() {
                     <article className="recommendation-card" key={row.id}>
                       <div className="recommendation-card-head">
                         <span className={riskClass(row.risk_type)}>{riskLabels[row.risk_type]}</span>
+                        {row.is_new_major && <span className="tag highlight">新增专业</span>}
                         <span>{row.rank_diff && row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)} 位次差</span>
                       </div>
                       <button className="recommendation-school" type="button" onClick={() => setSelectedDetail(row)}>
@@ -1248,6 +1252,7 @@ export default function App() {
                           {row.school_tags.map((tag) => (
                             <span key={tag} className="tag">{tag}</span>
                           ))}
+                          {row.is_new_major && <span className="tag highlight">新增专业</span>}
                           <p>
                             {row.major_code}{" "}
                             <button
@@ -1280,7 +1285,7 @@ export default function App() {
                         })}
                         <td>{row.province && row.city ? `${row.province} ${row.campus_city ?? row.city}` : "-"}</td>
                         <td>{row.rank_diff && row.rank_diff > 0 ? "+" : ""}{formatNumber(row.rank_diff)}</td>
-                        <td>{row.history_years ? `${row.history_years} 年` : matchConfidenceLabels[row.match_confidence]}</td>
+                        <td>{row.history_years ? `${row.history_years} 年` : matchConfidenceLabels[row.match_confidence]}{row.history_match_note ? ` / ${row.history_match_note}` : ""}</td>
                         <td className="row-actions">
                           <button className="small" onClick={() => setSelectedDetail(row)} type="button">详情</button>
                           <button className="small" onClick={() => addVolunteer(row)} type="button">加入</button>
@@ -1821,6 +1826,7 @@ export default function App() {
               <div><span>所在地</span><b>{selectedDetail.province && selectedDetail.city ? `${selectedDetail.province} ${selectedDetail.campus_city ?? selectedDetail.city}` : "-"}</b></div>
               <div><span>位次差</span><b>{selectedDetail.rank_diff && selectedDetail.rank_diff > 0 ? "+" : ""}{formatNumber(selectedDetail.rank_diff)}</b></div>
               <div><span>历史匹配</span><b>{selectedDetail.history_years ? `${selectedDetail.history_years} 年` : matchConfidenceLabels[selectedDetail.match_confidence]}</b></div>
+              <div><span>计划标记</span><b>{selectedDetail.is_new_major ? "新增专业" : selectedDetail.history_match_note || "-"}</b></div>
             </div>
 
             <section className="drawer-section">
@@ -1850,7 +1856,7 @@ export default function App() {
                 })}
               </div>
               <p className="drawer-note">
-                {historyTrend(selectedDetail)} 历史匹配方式：{matchConfidenceLabels[selectedDetail.match_confidence]}。
+                {historyTrend(selectedDetail)} 历史匹配方式：{matchConfidenceLabels[selectedDetail.match_confidence]}{selectedDetail.history_match_note ? `，${selectedDetail.history_match_note}` : ""}。
               </p>
             </section>
 

@@ -112,6 +112,7 @@ def main() -> int:
     parser.add_argument("--db-url", default="", help="Supabase Postgres connection URI. Falls back to SUPABASE_DB_URL.")
     parser.add_argument("--batch-size", type=int, default=1000)
     parser.add_argument("--replace-year", action="store_true", help="Delete rows for the same year+subject before import")
+    parser.add_argument("--replace-batch", default="", help="Delete rows for the same year+subject+batch before import")
     args = parser.parse_args()
 
     db_url = args.db_url or os.environ.get("SUPABASE_DB_URL")
@@ -134,9 +135,18 @@ def main() -> int:
 
     year = rows[0]["year"]
     subject = rows[0]["subject"]
+    replace_batch = args.replace_batch.strip()
     with psycopg.connect(db_url) as conn:
         with conn.transaction():
-            if args.replace_year:
+            if args.replace_year and replace_batch:
+                raise SystemExit("Use either --replace-year or --replace-batch, not both.")
+            if replace_batch:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "delete from public.admission_plans where year = %s and subject = %s and batch = %s;",
+                        (year, subject, replace_batch),
+                    )
+            elif args.replace_year:
                 with conn.cursor() as cur:
                     cur.execute(
                         "delete from public.admission_plans where year = %s and subject = %s;",

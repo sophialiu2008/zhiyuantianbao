@@ -58,7 +58,9 @@ export interface Recommendation {
   tuition: number | null;
   subject_requirement: string;
   major_remark: string;
-  match_confidence: "code_and_name" | "normalized_name" | "school_major_prefix" | "school_major_fuzzy" | "none";
+  match_confidence: "precomputed_xlsx" | "code_and_name" | "normalized_name" | "school_major_prefix" | "school_major_fuzzy" | "none";
+  is_new_major: boolean;
+  history_match_note: string;
 }
 
 export interface LocationOption {
