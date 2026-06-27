@@ -304,6 +304,7 @@ export interface AdmissionPlanSearchFilters {
   volunteerMode: string;
   subjectRequirements: string[];
   schoolTag: string;
+  tuitionRange: string;
   highLevelSports: boolean;
   keyword: string;
   schoolQuery: string;

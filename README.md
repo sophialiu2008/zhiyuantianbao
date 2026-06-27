@@ -81,6 +81,8 @@ python scripts\supabase_import\import_admission_plan_history_matches.py `
 
 该 Excel 路线会额外写入 `admission_plan_history_matches`，推荐 RPC 会优先使用其中的 2023-2025 预计算位次和 `新增专业` 标记；没有快照的计划仍回退到历史投档表动态匹配。
 
+招生计划查询页支持按学费区间筛选，包括 `5,000元/年及以下`、`5,001-8,000元/年`、`8,001-15,000元/年`、`15,001-30,000元/年`、`30,001-50,000元/年`、`50,000元/年以上` 和 `学费未明确`。对应数据库迁移为 `supabase/migrations/034_search_admission_plans_tuition_filter.sql`。
+
 5. 配置前端：
 
 ```powershell

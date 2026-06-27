@@ -129,6 +129,7 @@ export async function searchAdmissionPlans(filters: AdmissionPlanSearchFilters):
     throw new Error("Supabase 尚未配置。");
   }
 
+  const tuitionRange = parseTuitionRange(filters.tuitionRange);
   const { data, error } = await supabase.rpc("search_admission_plans", {
     p_plan_year: 2026,
     p_subject: filters.subject,
@@ -141,12 +142,28 @@ export async function searchAdmissionPlans(filters: AdmissionPlanSearchFilters):
     p_subject_requirements: filters.subjectRequirements,
     p_school_tag: filters.schoolTag,
     p_high_level_sports: filters.highLevelSports,
+    p_tuition_min: tuitionRange.min,
+    p_tuition_max: tuitionRange.max,
+    p_tuition_unknown: tuitionRange.unknown,
     p_limit: filters.pageSize,
     p_offset: (filters.page - 1) * filters.pageSize,
   });
 
   if (error) throw error;
   return (data || []) as AdmissionPlanRow[];
+}
+
+function parseTuitionRange(value: string): { min: number | null; max: number | null; unknown: boolean } {
+  if (!value) return { min: null, max: null, unknown: false };
+  if (value === "unknown") return { min: null, max: null, unknown: true };
+  const [minText, maxText] = value.split("-");
+  const min = Number.parseInt(minText, 10);
+  const max = Number.parseInt(maxText, 10);
+  return {
+    min: Number.isFinite(min) ? min : null,
+    max: Number.isFinite(max) && max > 0 ? max : null,
+    unknown: false,
+  };
 }
 
 export async function fetchSchoolProfile(schoolQuery: string, subject: Subject): Promise<SchoolProfileRow[]> {

@@ -49,6 +49,7 @@ const initialPlanFilters: AdmissionPlanSearchFilters = {
   volunteerMode: "",
   subjectRequirements: [],
   schoolTag: "",
+  tuitionRange: "",
   highLevelSports: false,
   keyword: "",
   schoolQuery: "",
@@ -73,6 +74,15 @@ const batchOptions = ["本科批", "本科提前批A段", "本科提前批B段",
 const subjectRequirementOptions = ["不限", "化学", "生物", "思想政治", "地理"];
 const planSubjectRequirementOptions = ["化学", "生物", "化学和生物", "化学或生物", "化学或思想政治", "化学或地理", "生物或思想政治", "生物或地理", "不限"];
 const schoolTagOptions = ["公办", "民办", "独立学院", "中外合作办学", "内地与港澳台地区合作办学"];
+const tuitionRangeOptions = [
+  { value: "0-5000", label: "5,000元/年及以下" },
+  { value: "5001-8000", label: "5,001-8,000元/年" },
+  { value: "8001-15000", label: "8,001-15,000元/年" },
+  { value: "15001-30000", label: "15,001-30,000元/年" },
+  { value: "30001-50000", label: "30,001-50,000元/年" },
+  { value: "50001-0", label: "50,000元/年以上" },
+  { value: "unknown", label: "学费未明确" },
+];
 
 const matchConfidenceLabels: Record<Recommendation["match_confidence"], string> = {
   precomputed_xlsx: "计划表预计算",
@@ -1378,6 +1388,7 @@ export default function App() {
                       <span>计划性质：{planFilters.planNature || "全部"}</span>
                       <span>科类：{planFilters.subject === "physics" ? "物理科目组合" : "历史科目组合"}</span>
                       <span>志愿模式：{planFilters.volunteerMode || "全部"}</span>
+                      <span>学费：{tuitionRangeOptions.find((option) => option.value === planFilters.tuitionRange)?.label || "全部"}</span>
                     </div>
                     <button
                       className="legacy-return-button"
@@ -1436,6 +1447,17 @@ export default function App() {
 
                     <div className="legacy-filter-row legacy-more-row">
                       <span className="legacy-field-label">更 多 条 件</span>
+                      <select
+                        className="legacy-select"
+                        value={planFilters.tuitionRange}
+                        onChange={(event) => updatePlanFilters({ tuitionRange: event.target.value, page: 1 })}
+                        title="按每学年学费筛选"
+                      >
+                        <option value="">全部学费</option>
+                        {tuitionRangeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
                       <label className="legacy-checkbox legacy-sports-checkbox">
                         高水平运动队
                         <input
